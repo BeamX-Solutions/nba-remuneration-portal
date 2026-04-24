@@ -54,9 +54,9 @@ const MyDocuments = () => {
   };
 
   const confirmDelete = async () => {
-    if (!confirmDoc) return;
+    if (!confirmDoc || !user) return;
     setDeleting(true);
-    const { error: err } = await supabase.from("documents").delete().eq("id", confirmDoc.id).eq("user_id", user!.id);
+    const { error: err } = await supabase.from("documents").delete().eq("id", confirmDoc.id).eq("user_id", user.id);
     setDeleting(false);
     setConfirmDoc(null);
     if (err) { toast({ title: "Delete failed", description: err.message, variant: "destructive" }); return; }
@@ -73,8 +73,9 @@ const MyDocuments = () => {
   const cancelEdit = () => { setEditingId(null); setEditContent(""); };
 
   const saveEdit = async (doc: any) => {
+    if (!user) return;
     setSavingEdit(true);
-    const { error } = await supabase.from("documents").update({ content: editContent }).eq("id", doc.id).eq("user_id", user!.id);
+    const { error } = await supabase.from("documents").update({ content: editContent }).eq("id", doc.id).eq("user_id", user.id);
     setSavingEdit(false);
     if (error) { toast({ title: "Failed to save", description: error.message, variant: "destructive" }); return; }
     setDocuments((prev) => prev.map((d) => d.id === doc.id ? { ...d, content: editContent } : d));

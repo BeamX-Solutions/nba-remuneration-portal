@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 export const adminEmails = (import.meta.env.VITE_ADMIN_EMAILS || "")
   .split(",").map((e: string) => e.trim().toLowerCase()).filter(Boolean);
 
-export const isAdmin = (email: string) => adminEmails.includes(email.toLowerCase());
+export const isAdmin = (email: string) => !!email && adminEmails.includes(email.toLowerCase());
 
 const AdminRoute = ({ children }: { children: ReactNode }) => {
   const { user, loading } = useAuth();

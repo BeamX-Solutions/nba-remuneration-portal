@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Loader2, Search, FileText } from "lucide-react";
 import PortalLayout from "@/components/PortalLayout";
 import PageHeader from "@/components/PageHeader";
@@ -6,16 +6,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-
-const DOC_TYPE_LABELS: Record<string, string> = {
-  deed_of_assignment: "Deed of Assignment",
-  deed_of_gift: "Deed of Gift",
-  mortgage_deed: "Mortgage Deed",
-  power_of_attorney: "Power of Attorney",
-  contract_of_sale: "Contract of Sale",
-  tenancy_agreement: "Tenancy Agreement",
-  precedent: "Precedent",
-};
+import { useToast } from "@/hooks/use-toast";
+import { DOC_TYPE_LABELS } from "@/lib/constants";
 
 const FindDocument = () => {
   const [ban, setBan] = useState("");
@@ -23,17 +15,26 @@ const FindDocument = () => {
   const [results, setResults] = useState<any[]>([]);
   const [searched, setSearched] = useState(false);
   const [searching, setSearching] = useState(false);
+  const searchId = useRef(0);
+  const { toast } = useToast();
 
   const handleSearch = async () => {
     if (!ban.trim() || !refNumber.trim()) return;
+    const id = ++searchId.current;
     setSearching(true);
-    setSearched(true);
-    const { data } = await supabase.from("documents")
+    const { data, error } = await supabase.from("documents")
       .select("id, title, document_type, reference_number, ban, status, created_at")
       .eq("status", "completed").eq("ban", ban.trim())
       .ilike("reference_number", `%${refNumber.trim()}%`)
       .order("created_at", { ascending: false });
+    if (id !== searchId.current) return; // discard stale result
+    if (error) {
+      toast({ title: "Search failed", description: error.message, variant: "destructive" });
+      setSearching(false);
+      return;
+    }
     setResults(data || []);
+    setSearched(true);
     setSearching(false);
   };
 

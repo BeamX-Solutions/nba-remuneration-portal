@@ -14,6 +14,7 @@ const Settings = () => {
   const [confirm, setConfirm] = useState("");
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNext, setShowNext] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
 
@@ -64,7 +65,7 @@ const Settings = () => {
                 {[
                   { label: "Current Password", value: current, setter: setCurrent, show: showCurrent, toggle: setShowCurrent },
                   { label: "New Password", value: next, setter: setNext, show: showNext, toggle: setShowNext },
-                  { label: "Confirm New Password", value: confirm, setter: setConfirm, show: showNext, toggle: setShowNext },
+                  { label: "Confirm New Password", value: confirm, setter: setConfirm, show: showConfirm, toggle: setShowConfirm },
                 ].map((f, i) => (
                   <div key={i}>
                     <label className="text-[11px] tracking-eyebrow uppercase font-semibold text-muted-foreground">{f.label}</label>
@@ -77,6 +78,7 @@ const Settings = () => {
                       />
                       <button
                         type="button"
+                        aria-label={f.show ? "Hide password" : "Show password"}
                         onClick={() => f.toggle(!f.show)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                       >

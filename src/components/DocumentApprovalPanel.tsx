@@ -35,7 +35,7 @@ export const DocumentApprovalPanel = ({
   const [rejectionReason, setRejectionReason] = useState("");
   const [comments, setComments] = useState("");
 
-  const userIsAdmin = user?.email ? isAdmin(user.email) : false;
+  const userIsAdmin = isAdmin(user?.email ?? "");
   const isSubmitted = status === "submitted";
 
   const handleApprove = async () => {

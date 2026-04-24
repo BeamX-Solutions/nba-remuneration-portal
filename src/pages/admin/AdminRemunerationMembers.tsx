@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Search, User, Scale, ChevronDown, ChevronUp, Ban, CheckCircle, UserCheck } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 import PageHeader from "@/components/PageHeader";
@@ -27,25 +27,31 @@ const AdminRemunerationMembers = () => {
       });
   }, []);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    const q = query.toLowerCase().trim();
-    if (!q) { setFiltered(members); return; }
-    setFiltered(members.filter((m) =>
-      [m.first_name, m.surname, m.email, m.branch, m.phone].some((v) => v?.toLowerCase().includes(q))
-    ));
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleSearchChange = (value: string) => {
+    setQuery(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      const q = value.toLowerCase().trim();
+      setFiltered(!q ? members : members.filter((m) =>
+        [m.first_name, m.surname, m.email, m.branch, m.phone].some((v) => v?.toLowerCase().includes(q))
+      ));
+    }, 200);
   };
 
   const approveAccount = async (m: any) => {
     const { error } = await supabase.from("profiles").update({ status: "active" }).eq("id", m.id);
     if (error) { toast({ title: "Failed", description: error.message, variant: "destructive" }); return; }
     const name = [m.surname, m.first_name].filter(Boolean).join(" ") || "Member";
-    await supabase.from("notifications").insert({
-      user_id: m.user_id,
-      title: "Account Approved",
-      message: "Your NBA Remuneration Portal account has been approved. You can now access all features.",
-      type: "account",
-    });
+    if (m.user_id) {
+      await supabase.from("notifications").insert({
+        user_id: m.user_id,
+        title: "Account Approved",
+        message: "Your NBA Remuneration Portal account has been approved. You can now access all features.",
+        type: "account",
+      });
+    }
     if (m.email) {
       await supabase.functions.invoke("send-email", {
         body: { type: "account_approved", to: m.email, name },
@@ -72,13 +78,15 @@ const AdminRemunerationMembers = () => {
 
         <Card className="shadow-card">
           <CardContent className="p-4">
-            <form onSubmit={handleSearch} className="flex gap-3">
+            <div className="flex gap-3">
               <input type="text" value={query}
-                onChange={(e) => { setQuery(e.target.value); if (!e.target.value) setFiltered(members); }}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 placeholder="Search by name, email, branch..."
                 className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
-              <Button type="submit"><Search className="h-4 w-4 mr-1" /> Search</Button>
-            </form>
+              <Button type="button" onClick={() => handleSearchChange(query)}>
+                <Search className="h-4 w-4 mr-1" /> Search
+              </Button>
+            </div>
           </CardContent>
         </Card>
 

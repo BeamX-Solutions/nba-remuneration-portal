@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Search, FileText, ChevronDown, ChevronUp, CheckCircle } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 import PageHeader from "@/components/PageHeader";
@@ -7,16 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-
-const DOC_TYPE_LABELS: Record<string, string> = {
-  deed_of_assignment: "Deed of Assignment",
-  deed_of_gift: "Deed of Gift",
-  mortgage_deed: "Mortgage Deed",
-  power_of_attorney: "Power of Attorney",
-  contract_of_sale: "Contract of Sale",
-  tenancy_agreement: "Tenancy Agreement",
-  precedent: "Precedent",
-};
+import { DOC_TYPE_LABELS } from "@/lib/constants";
 
 const AdminDocuments = () => {
   const [documents, setDocuments] = useState<any[]>([]);
@@ -45,13 +36,17 @@ const AdminDocuments = () => {
     load();
   }, []);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    const q = query.toLowerCase().trim();
-    if (!q) { setFiltered(documents); return; }
-    setFiltered(documents.filter((d) =>
-      [d.title, d.reference_number, d.document_type].some((v) => v?.toLowerCase().includes(q))
-    ));
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleSearchChange = (value: string) => {
+    setQuery(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      const q = value.toLowerCase().trim();
+      setFiltered(!q ? documents : documents.filter((d) =>
+        [d.title, d.reference_number, d.document_type].some((v) => v?.toLowerCase().includes(q))
+      ));
+    }, 200);
   };
 
   const markCompleted = async (doc: any) => {
@@ -83,13 +78,15 @@ const AdminDocuments = () => {
 
         <Card className="shadow-card">
           <CardContent className="p-4">
-            <form onSubmit={handleSearch} className="flex gap-3">
+            <div className="flex gap-3">
               <input type="text" value={query}
-                onChange={(e) => { setQuery(e.target.value); if (!e.target.value) setFiltered(documents); }}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 placeholder="Search by title, reference, or document type..."
                 className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
-              <Button type="submit"><Search className="h-4 w-4 mr-1" /> Search</Button>
-            </form>
+              <Button type="button" onClick={() => handleSearchChange(query)}>
+                <Search className="h-4 w-4 mr-1" /> Search
+              </Button>
+            </div>
           </CardContent>
         </Card>
 

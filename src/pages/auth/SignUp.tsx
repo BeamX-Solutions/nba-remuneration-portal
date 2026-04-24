@@ -23,13 +23,18 @@ const SignUp = () => {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({ email, password });
     setLoading(false);
     if (error) {
       toast({ title: "Sign up failed", description: error.message, variant: "destructive" });
       return;
     }
-    navigate("/dashboard");
+    if (!data.session) {
+      // Email confirmation is required — user is not logged in yet
+      toast({ title: "Check your email", description: "We sent you a confirmation link. Please verify your email to continue." });
+      return;
+    }
+    navigate("/complete-profile");
   };
 
   const handleGoogle = async () => {
@@ -128,7 +133,7 @@ const SignUp = () => {
                     onChange={(e) => setPassword(e.target.value)} placeholder="Min. 8 characters" minLength={8}
                     className="w-full rounded-sm border border-input bg-background px-4 py-2.5 pr-10 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent/60 transition-elegant"
                   />
-                  <button type="button" onClick={() => setShowPassword((v) => !v)}
+                  <button type="button" aria-label={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword((v) => !v)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" tabIndex={-1}>
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>

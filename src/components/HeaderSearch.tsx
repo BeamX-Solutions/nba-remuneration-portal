@@ -3,16 +3,7 @@ import { Search, FileText, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-
-const DOC_TYPE_LABELS: Record<string, string> = {
-  deed_of_assignment: "Deed of Assignment",
-  deed_of_gift: "Deed of Gift",
-  mortgage_deed: "Mortgage Deed",
-  power_of_attorney: "Power of Attorney",
-  contract_of_sale: "Contract of Sale",
-  tenancy_agreement: "Tenancy Agreement",
-  precedent: "Precedent",
-};
+import { DOC_TYPE_LABELS } from "@/lib/constants";
 
 const HeaderSearch = () => {
   const { user } = useAuth();
@@ -71,6 +62,7 @@ const HeaderSearch = () => {
       />
       {query && (
         <button
+          aria-label="Clear search"
           onClick={() => { setQuery(""); setOpen(false); }}
           className="absolute right-3 top-1/2 -translate-y-1/2 text-primary-foreground/40 hover:text-primary-foreground transition-colors"
         >

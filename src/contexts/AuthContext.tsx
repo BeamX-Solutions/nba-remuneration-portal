@@ -69,7 +69,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
-      if (session?.user) checkProfile(session.user.id);
+      // checkProfile is handled by onAuthStateChange above
     }).catch(() => {
       setLoading(false);
     });
@@ -93,7 +93,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setProfileBranch(p.branch ?? null);
         }
       })
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "CHANNEL_ERROR") checkProfile(user.id);
+      });
     return () => { channel.unsubscribe(); };
   }, [user?.id]);
 

@@ -132,7 +132,7 @@ const SignIn = () => {
                     onChange={(e) => setPassword(e.target.value)} placeholder="••••••••"
                     className="w-full rounded-sm border border-input bg-background px-4 py-2.5 pr-10 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent/60 transition-elegant"
                   />
-                  <button type="button" onClick={() => setShowPassword((v) => !v)}
+                  <button type="button" aria-label={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword((v) => !v)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" tabIndex={-1}>
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>

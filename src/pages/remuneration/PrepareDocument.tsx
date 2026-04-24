@@ -112,6 +112,7 @@ const PrepareDocument = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [docType, setDocType] = useState<DocType>("deed_of_assignment");
   const [formData, setFormData] = useState<Record<string, string>>({});
+  const [savedFormData, setSavedFormData] = useState<Partial<Record<DocType, Record<string, string>>>>({});
   const [precedentText, setPrecedentText] = useState("");
   const [generatedContent, setGeneratedContent] = useState("");
   const [generating, setGenerating] = useState(false);
@@ -200,7 +201,12 @@ const PrepareDocument = () => {
       return;
     }
     const docId = data?.[0]?.id;
-    if (docId) await saveDocumentVersion(docId, user.id, content, formData as any);
+    if (!docId) {
+      toast({ title: "Error", description: "Document could not be saved. Please try again.", variant: "destructive" });
+      setSaving(false);
+      return;
+    }
+    await saveDocumentVersion(docId, user.id, content, formData as any);
     toast({ title: "Draft saved!", description: `Reference: ${refNum}` });
     setSaving(false);
     setCurrentStep(4);
@@ -231,7 +237,8 @@ const PrepareDocument = () => {
     }).select();
     if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); setSaving(false); return; }
     const docId = data?.[0]?.id;
-    if (docId) await saveDocumentVersion(docId, user.id, generatedContent, method === "ai" ? (formData as any) : ({ precedent: precedentText } as any));
+    if (!docId) { toast({ title: "Error", description: "Document could not be saved. Please try again.", variant: "destructive" }); setSaving(false); return; }
+    await saveDocumentVersion(docId, user.id, generatedContent, method === "ai" ? (formData as any) : ({ precedent: precedentText } as any));
     toast({ title: "Document saved!", description: `Reference: ${refNum}` });
     setSaving(false);
     setCurrentStep(4);
@@ -247,7 +254,7 @@ const PrepareDocument = () => {
   };
 
   const resetForm = () => {
-    setCurrentStep(1); setGeneratedContent(""); setFormData({}); setPrecedentText(""); setDocType("deed_of_assignment");
+    setCurrentStep(1); setGeneratedContent(""); setFormData({}); setSavedFormData({}); setPrecedentText(""); setDocType("deed_of_assignment");
   };
 
   const renderField = (field: FieldDef) => (
@@ -345,7 +352,12 @@ const PrepareDocument = () => {
                         </label>
                         <Select
                           value={docType}
-                          onValueChange={(v) => { setDocType(v as DocType); setFormData({}); }}
+                          onValueChange={(v) => {
+                            const newType = v as DocType;
+                            setSavedFormData(prev => ({ ...prev, [docType]: formData }));
+                            setFormData(savedFormData[newType] ?? {});
+                            setDocType(newType);
+                          }}
                         >
                           <SelectTrigger className="mt-1">
                             <SelectValue />
