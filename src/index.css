@@ -1,0 +1,236 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,300;1,9..144,400;1,9..144,500&family=Playfair+Display:wght@400;500;600;700;800&family=Source+Sans+3:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 150 20% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 150 20% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 150 20% 10%;
+
+    --primary: 148 40% 22%;
+    --primary-foreground: 45 100% 96%;
+
+    --secondary: 45 60% 92%;
+    --secondary-foreground: 148 40% 18%;
+
+    --muted: 140 10% 95%;
+    --muted-foreground: 150 10% 40%;
+
+    --accent: 42 78% 50%;
+    --accent-foreground: 150 30% 10%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 140 15% 88%;
+    --input: 140 15% 88%;
+    --ring: 148 40% 22%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 148 30% 12%;
+    --sidebar-foreground: 45 20% 90%;
+    --sidebar-primary: 42 78% 50%;
+    --sidebar-primary-foreground: 150 30% 10%;
+    --sidebar-accent: 148 25% 18%;
+    --sidebar-accent-foreground: 45 20% 95%;
+    --sidebar-border: 148 20% 20%;
+    --sidebar-ring: 42 78% 50%;
+
+    --hero-overlay: 148 40% 15%;
+    --ivory: 45 40% 96%;
+    --emerald: 148 40% 22%;
+    --parchment: 40 25% 94%;
+
+    --font-heading: 'Playfair Display', serif;
+    --font-display: 'Fraunces', serif;
+    --font-body: 'Source Sans 3', sans-serif;
+  }
+
+  .dark {
+    --background: 150 20% 6%;
+    --foreground: 45 20% 92%;
+    --card: 150 20% 8%;
+    --card-foreground: 45 20% 92%;
+    --popover: 150 20% 8%;
+    --popover-foreground: 45 20% 92%;
+    --primary: 42 78% 50%;
+    --primary-foreground: 150 30% 10%;
+    --secondary: 148 25% 15%;
+    --secondary-foreground: 45 20% 90%;
+    --muted: 148 15% 14%;
+    --muted-foreground: 140 10% 55%;
+    --accent: 42 78% 50%;
+    --accent-foreground: 150 30% 10%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 148 15% 18%;
+    --input: 148 15% 18%;
+    --ring: 42 78% 50%;
+    --sidebar-background: 150 20% 6%;
+    --sidebar-foreground: 45 20% 90%;
+    --sidebar-primary: 42 78% 50%;
+    --sidebar-primary-foreground: 150 30% 10%;
+    --sidebar-accent: 148 25% 12%;
+    --sidebar-accent-foreground: 45 20% 95%;
+    --sidebar-border: 148 15% 15%;
+    --sidebar-ring: 42 78% 50%;
+  }
+}
+
+@layer base {
+  html {
+    font-size: 17px;
+  }
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-body;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+  }
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  textarea,
+  select {
+    @apply rounded-sm;
+    &:focus {
+      @apply outline-none ring-2 ring-offset-0;
+      ring-color: hsl(var(--accent) / 0.4);
+      border-color: hsl(var(--accent) / 0.6);
+    }
+  }
+  a, button {
+    @apply transition-all duration-200;
+  }
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2;
+  }
+}
+
+@layer utilities {
+  .text-gradient-gold {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(42 78% 50%), hsl(38 80% 60%));
+  }
+  .bg-hero-gradient {
+    background: linear-gradient(135deg, hsl(var(--hero-overlay) / 0.92), hsl(var(--hero-overlay) / 0.75));
+  }
+  .bg-hero-overlay {
+    background: linear-gradient(160deg, hsl(148 45% 8% / 0.93) 0%, hsl(148 40% 12% / 0.85) 60%, hsl(38 40% 20% / 0.70) 100%);
+  }
+  .border-gold {
+    border-color: hsl(var(--accent));
+  }
+  .shadow-card {
+    box-shadow: 0 4px 20px -4px hsl(var(--primary) / 0.08);
+  }
+  .shadow-elegant {
+    box-shadow: 0 8px 40px -8px hsl(var(--primary) / 0.15);
+  }
+  .shadow-soft {
+    box-shadow: 0 4px 24px -4px hsl(var(--primary) / 0.10);
+  }
+  .shadow-gold {
+    box-shadow: 0 4px 20px -4px hsl(var(--accent) / 0.35);
+  }
+  .transition-elegant {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .rule-gold {
+    height: 1px;
+    background: hsl(var(--accent) / 0.4);
+  }
+
+  /* Card lift — spring easing for a natural feel */
+  .card-hover {
+    transition: transform 0.22s cubic-bezier(0.34, 1.4, 0.64, 1),
+                box-shadow 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 0.22s ease;
+  }
+  .card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 48px -10px hsl(var(--primary) / 0.18),
+                0 4px 16px -4px hsl(var(--accent) / 0.10);
+    border-color: hsl(var(--accent) / 0.25);
+  }
+
+  /* Underline slide — for text links and nav items */
+  .link-underline {
+    position: relative;
+    text-decoration: none;
+  }
+  .link-underline::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 1px;
+    background: hsl(var(--accent));
+    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .link-underline:hover::after {
+    width: 100%;
+  }
+
+  /* Sidebar nav hover — left accent bar slides in */
+  .nav-item-hover {
+    position: relative;
+    transition: color 0.18s ease, background-color 0.18s ease;
+  }
+  .nav-item-hover::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%) scaleY(0);
+    width: 3px;
+    height: 60%;
+    background: hsl(var(--sidebar-primary));
+    border-radius: 0 2px 2px 0;
+    transition: transform 0.2s cubic-bezier(0.34, 1.4, 0.64, 1), opacity 0.2s ease;
+    opacity: 0;
+  }
+  .nav-item-hover:hover::before {
+    transform: translateY(-50%) scaleY(1);
+    opacity: 1;
+  }
+
+  /* Button press — subtle scale + shadow */
+  .btn-animate {
+    transition: transform 0.15s cubic-bezier(0.34, 1.4, 0.64, 1),
+                box-shadow 0.15s ease,
+                background-color 0.15s ease,
+                border-color 0.15s ease;
+  }
+  .btn-animate:hover {
+    transform: translateY(-1px) scale(1.015);
+    box-shadow: 0 6px 20px -4px hsl(var(--primary) / 0.25);
+  }
+  .btn-animate:active {
+    transform: translateY(0) scale(0.99);
+    box-shadow: none;
+  }
+
+  /* Icon circle pulse on card hover */
+  .icon-hover {
+    transition: transform 0.22s cubic-bezier(0.34, 1.4, 0.64, 1),
+                background-color 0.22s ease,
+                border-color 0.22s ease;
+  }
+  .group:hover .icon-hover {
+    transform: scale(1.1);
+    background-color: hsl(var(--accent) / 0.12);
+    border-color: hsl(var(--accent) / 0.35);
+  }
+}
