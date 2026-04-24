@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
-import { Sparkles, Loader2, ChevronDown, BookOpen, FolderOpen, Download, CheckCircle2, Info } from "lucide-react";
+import { Sparkles, Loader2, BookOpen, FolderOpen, Download, CheckCircle2, Info } from "lucide-react";
 import { exportDocumentToPDF } from "@/lib/pdfExport";
 import { saveDocumentVersion } from "@/lib/documentUtils";
 import PortalLayout from "@/components/PortalLayout";
@@ -12,6 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const STEPS = [
   { num: 1, label: "Prepare" },
@@ -250,7 +251,7 @@ const PrepareDocument = () => {
   };
 
   const renderField = (field: FieldDef) => (
-    <div key={field.key} className={field.fullWidth ? "col-span-2" : ""}>
+    <div key={field.key} className={field.fullWidth ? "col-span-full" : ""}>
       <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
         {field.label}{field.required && <span className="text-destructive ml-0.5">*</span>}
       </label>
@@ -309,7 +310,7 @@ const PrepareDocument = () => {
                     </span>
                   </div>
                   {i < STEPS.length - 1 && (
-                    <div className={cn("flex-1 h-px mx-2 mb-5", currentStep > step.num ? "bg-primary" : "bg-border")} />
+                    <div className={cn("flex-1 h-px mx-2 sm:mb-5", currentStep > step.num ? "bg-primary" : "bg-border")} />
                   )}
                 </div>
               ))}
@@ -331,10 +332,10 @@ const PrepareDocument = () => {
 
             <TabsContent value="ai">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
-                {/* Left: Document Details form */}
+                {/* Document Details form — always first on mobile */}
                 <div className="lg:col-span-2">
                   <Card className="shadow-card">
-                    <CardContent className="p-6 space-y-5">
+                    <CardContent className="p-4 sm:p-6 space-y-5">
                       <h3 className="font-heading text-lg font-bold text-foreground">Document Details</h3>
 
                       {/* Document type */}
@@ -342,18 +343,19 @@ const PrepareDocument = () => {
                         <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                           Document Type
                         </label>
-                        <div className="relative mt-1">
-                          <select
-                            value={docType}
-                            onChange={(e) => { setDocType(e.target.value as DocType); setFormData({}); }}
-                            className="w-full rounded-md border border-input bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring appearance-none pr-8"
-                          >
+                        <Select
+                          value={docType}
+                          onValueChange={(v) => { setDocType(v as DocType); setFormData({}); }}
+                        >
+                          <SelectTrigger className="mt-1">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
                             {DOC_TYPES.map((d) => (
-                              <option key={d.value} value={d.value}>{d.label}</option>
+                              <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
                             ))}
-                          </select>
-                          <ChevronDown className="absolute right-2.5 top-3 h-4 w-4 text-muted-foreground pointer-events-none" />
-                        </div>
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       {/* Party fields in two bordered columns */}
@@ -387,7 +389,7 @@ const PrepareDocument = () => {
                   </Card>
                 </div>
 
-                {/* Right: Summary panel */}
+                {/* Summary + Need Assistance — below form on mobile, right column on desktop */}
                 <div className="space-y-4">
                   <div className="bg-muted/60 rounded-xl p-5 space-y-4">
                     <h4 className="font-heading text-base font-bold text-foreground">Summary</h4>
@@ -447,7 +449,7 @@ const PrepareDocument = () => {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
                 <div className="lg:col-span-2">
                   <Card className="shadow-card">
-                    <CardContent className="p-6 space-y-4">
+                    <CardContent className="p-4 sm:p-6 space-y-4">
                       <h3 className="font-heading text-lg font-bold text-foreground">Use Your Precedent</h3>
                       <p className="text-sm text-muted-foreground">
                         Paste your existing document. The system will reformat it for remuneration compliance.
@@ -483,9 +485,9 @@ const PrepareDocument = () => {
         {/* Step 2: Preview */}
         {currentStep === 2 && (
           <Card className="shadow-card">
-            <CardContent className="p-6 space-y-4">
+            <CardContent className="p-4 sm:p-6 space-y-4">
               <h3 className="font-heading text-xl font-semibold">Document Preview</h3>
-              <div className="border border-border rounded-md p-6 bg-background min-h-[300px] prose prose-sm max-w-none text-foreground">
+              <div className="border border-border rounded-md p-4 sm:p-6 bg-background min-h-[300px] prose prose-sm max-w-none text-foreground overflow-x-auto">
                 <ReactMarkdown>{generatedContent}</ReactMarkdown>
               </div>
               <div className="flex gap-3 flex-wrap">
@@ -502,14 +504,14 @@ const PrepareDocument = () => {
         {/* Step 3: Payment */}
         {currentStep === 3 && (
           <Card className="shadow-card">
-            <CardContent className="p-8 space-y-6 text-center">
+            <CardContent className="p-4 sm:p-8 space-y-6 text-center">
               <h3 className="font-heading text-xl font-semibold">Payment</h3>
               <p className="text-muted-foreground text-sm max-w-md mx-auto">
                 In line with the <strong>Legal Practitioners' Remuneration Order 2023</strong>, a fee of{" "}
                 <strong>10% of the consideration</strong> is due before the final document is issued.
               </p>
               {formData.consideration && (
-                <div className="inline-block bg-accent/10 border border-accent/30 rounded-xl px-8 py-5">
+                <div className="inline-block bg-accent/10 border border-accent/30 rounded-xl px-5 py-5 sm:px-8 w-full sm:w-auto">
                   <p className="text-sm text-muted-foreground">Amount Due</p>
                   <p className="font-heading text-3xl font-bold text-primary mt-1">
                     ₦{(parseFloat(formData.consideration.replace(/,/g, "")) * 0.1).toLocaleString("en-NG", { minimumFractionDigits: 2 })}
@@ -520,7 +522,7 @@ const PrepareDocument = () => {
               <p className="text-xs text-muted-foreground">
                 Payment gateway coming soon. Save as draft and complete payment at the secretariat.
               </p>
-              <div className="flex gap-3 justify-center">
+              <div className="flex gap-3 justify-center flex-wrap">
                 <Button variant="outline" onClick={() => setCurrentStep(2)}>← Back</Button>
                 <Button onClick={handleSaveDocument} disabled={saving}>
                   {saving ? "Saving..." : "Save Document as Draft"}
@@ -533,7 +535,7 @@ const PrepareDocument = () => {
         {/* Step 4: Confirmation */}
         {currentStep === 4 && (
           <Card className="shadow-card">
-            <CardContent className="p-8 space-y-4 text-center">
+            <CardContent className="p-4 sm:p-8 space-y-4 text-center">
               <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center mx-auto">
                 <CheckCircle2 className="h-8 w-8 text-green-600" />
               </div>
@@ -541,7 +543,7 @@ const PrepareDocument = () => {
               <p className="text-sm text-muted-foreground max-w-sm mx-auto">
                 Your document has been saved as a draft. Complete payment to receive the final BAIN-stamped document.
               </p>
-              <div className="flex gap-3 justify-center pt-2">
+              <div className="flex gap-3 justify-center flex-wrap pt-2">
                 <Button variant="outline" onClick={resetForm}>Create Another</Button>
                 <Button asChild>
                   <a href="/dashboard/documents">
