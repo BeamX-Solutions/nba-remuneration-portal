@@ -8,7 +8,7 @@ import { sidebarItems } from "@/lib/sidebarItems";
 
 const PortalLayout = ({ children }: { children: ReactNode }) => {
   const location = useLocation();
-  const { profileName, profileBranch } = useAuth();
+  const { profileName, profileBranch, profileAvatar } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const fullName = profileName || "";
@@ -17,11 +17,20 @@ const PortalLayout = ({ children }: { children: ReactNode }) => {
     <div className="flex flex-col h-full">
       {/* User info */}
       <div className="px-6 pt-6 pb-4">
-        <p className="text-[11px] uppercase tracking-widest text-sidebar-foreground/40 mb-1 font-medium">
-          Legal Practitioner
-        </p>
-        <h2 className="font-display font-light text-sidebar-foreground text-lg leading-tight">{fullName}</h2>
-        <p className="text-xs text-sidebar-foreground/50 mt-0.5">{profileBranch || "NBA Member"}</p>
+        <div className="flex items-center gap-3 mb-3">
+          <div className="h-10 w-10 rounded-full overflow-hidden ring-2 ring-sidebar-border shrink-0 bg-sidebar-accent flex items-center justify-center">
+            {profileAvatar
+              ? <img src={profileAvatar} alt="Profile" className="h-full w-full object-cover" />
+              : <span className="text-sm font-semibold text-sidebar-foreground/70">
+                  {fullName ? fullName.split(" ").map((n: string) => n[0]).slice(0, 2).join("").toUpperCase() : "?"}
+                </span>}
+          </div>
+          <div className="min-w-0">
+            <p className="text-[11px] uppercase tracking-widest text-sidebar-foreground/40 font-medium">Legal Practitioner</p>
+            <h2 className="font-display font-light text-sidebar-foreground text-sm leading-tight truncate">{fullName}</h2>
+          </div>
+        </div>
+        <p className="text-xs text-sidebar-foreground/50">{profileBranch || "NBA Member"}</p>
       </div>
 
       {/* Divider */}

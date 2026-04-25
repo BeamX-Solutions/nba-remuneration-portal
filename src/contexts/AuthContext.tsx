@@ -10,6 +10,7 @@ interface AuthContextType {
   profileStatus: string | null;
   profileName: string | null;
   profileBranch: string | null;
+  profileAvatar: string | null;
   refreshProfile: () => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -22,6 +23,7 @@ const AuthContext = createContext<AuthContextType>({
   profileStatus: null,
   profileName: null,
   profileBranch: null,
+  profileAvatar: null,
   refreshProfile: async () => {},
   signOut: async () => {},
 });
@@ -36,11 +38,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profileStatus, setProfileStatus] = useState<string | null>(null);
   const [profileName, setProfileName] = useState<string | null>(null);
   const [profileBranch, setProfileBranch] = useState<string | null>(null);
+  const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
 
   const checkProfile = useCallback(async (userId: string) => {
     const { data, error } = await supabase
       .from("profiles")
-      .select("first_name, surname, status, branch")
+      .select("first_name, surname, status, branch, avatar_url")
       .eq("user_id", userId)
       .maybeSingle();
     if (error) return;
@@ -49,6 +52,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const name = [data?.first_name, data?.surname].filter(Boolean).join(" ");
     setProfileName(name || null);
     setProfileBranch(data?.branch ?? null);
+    setProfileAvatar(data?.avatar_url ?? null);
   }, []);
 
   const refreshProfile = useCallback(async () => {
@@ -91,6 +95,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const name = [p.first_name, p.surname].filter(Boolean).join(" ");
           setProfileName(name || null);
           setProfileBranch(p.branch ?? null);
+          setProfileAvatar(p.avatar_url ?? null);
         }
       })
       .subscribe((status) => {
@@ -105,10 +110,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setProfileStatus(null);
     setProfileName(null);
     setProfileBranch(null);
+    setProfileAvatar(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, profileComplete, profileStatus, profileName, profileBranch, refreshProfile, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, profileComplete, profileStatus, profileName, profileBranch, profileAvatar, refreshProfile, signOut }}>
       {children}
     </AuthContext.Provider>
   );

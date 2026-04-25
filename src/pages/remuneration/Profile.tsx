@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { User, Save, Loader2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { User, Save, Loader2, Camera } from "lucide-react";
 import BranchSelect from "@/components/BranchSelect";
 import PortalLayout from "@/components/PortalLayout";
 import PageHeader from "@/components/PageHeader";
@@ -36,32 +36,93 @@ const FIELD_GROUPS = [
 ];
 
 const Profile = () => {
-  const { user, refreshProfile } = useAuth();
+  const { user, profileAvatar, refreshProfile } = useAuth();
   const { toast } = useToast();
   const [profile, setProfile] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [profileId, setProfileId] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!user) return;
     supabase
       .from("profiles")
-      .select("id, first_name, middle_name, surname, ban, year_of_call, branch, phone, office_address")
+      .select("id, first_name, middle_name, surname, ban, year_of_call, branch, phone, office_address, avatar_url")
       .eq("user_id", user.id)
       .maybeSingle()
       .then(({ data }) => {
         if (data) {
           setProfileId(data.id);
-          const { id, ...rest } = data;
+          const { id, avatar_url, ...rest } = data;
           setProfile(Object.fromEntries(Object.entries(rest).map(([k, v]) => [k, v ?? ""])));
+          setAvatarUrl(avatar_url ?? null);
         }
         setLoading(false);
       });
   }, [user]);
 
+  // Keep local avatar in sync if it changes from another tab via realtime
+  useEffect(() => {
+    setAvatarUrl(profileAvatar);
+  }, [profileAvatar]);
+
   const handleChange = (key: string, value: string) => {
     setProfile((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleAvatarClick = () => fileInputRef.current?.click();
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Invalid file type", description: "Please select an image file.", variant: "destructive" });
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Maximum size is 2 MB.", variant: "destructive" });
+      return;
+    }
+
+    setUploadingAvatar(true);
+    const ext = file.name.split(".").pop() ?? "jpg";
+    const path = `${user.id}/avatar.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("avatars")
+      .upload(path, file, { upsert: true, contentType: file.type });
+
+    if (uploadError) {
+      toast({ title: "Upload failed", description: uploadError.message, variant: "destructive" });
+      setUploadingAvatar(false);
+      return;
+    }
+
+    const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
+    // Bust cache so the new image loads immediately
+    const cacheBusted = `${publicUrl}?t=${Date.now()}`;
+
+    const { error: updateError } = await supabase
+      .from("profiles")
+      .update({ avatar_url: publicUrl })
+      .eq("user_id", user.id);
+
+    setUploadingAvatar(false);
+
+    if (updateError) {
+      toast({ title: "Failed to save avatar", description: updateError.message, variant: "destructive" });
+      return;
+    }
+
+    setAvatarUrl(cacheBusted);
+    await refreshProfile();
+    toast({ title: "Profile photo updated." });
+    // Reset input so the same file can be re-selected if needed
+    e.target.value = "";
   };
 
   const handleSave = async () => {
@@ -84,6 +145,12 @@ const Profile = () => {
     toast({ title: "Profile updated successfully." });
   };
 
+  const initials = [profile.first_name, profile.surname]
+    .filter(Boolean)
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase() || user?.email?.[0]?.toUpperCase() || "?";
+
   return (
     <PortalLayout>
       <div className="space-y-8 max-w-2xl">
@@ -105,13 +172,46 @@ const Profile = () => {
           </div>
         ) : (
           <div className="space-y-6">
-            {/* Email — read only */}
+            {/* Avatar + identity card */}
             <Card className="shadow-soft border border-border/60">
               <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="h-14 w-14 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-                    <User className="h-7 w-7 text-primary" />
+                <div className="flex items-center gap-5">
+                  {/* Avatar with upload overlay */}
+                  <div className="relative shrink-0">
+                    <button
+                      type="button"
+                      onClick={handleAvatarClick}
+                      disabled={uploadingAvatar}
+                      className="group relative h-20 w-20 rounded-full overflow-hidden ring-2 ring-border focus:outline-none focus:ring-primary transition-all"
+                      aria-label="Change profile photo"
+                    >
+                      {avatarUrl ? (
+                        <img
+                          src={avatarUrl}
+                          alt="Profile"
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="h-full w-full bg-primary/10 flex items-center justify-center">
+                          <User className="h-8 w-8 text-primary/60" />
+                        </div>
+                      )}
+                      {/* Hover overlay */}
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        {uploadingAvatar
+                          ? <Loader2 className="h-5 w-5 text-white animate-spin" />
+                          : <Camera className="h-5 w-5 text-white" />}
+                      </div>
+                    </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      className="hidden"
+                      onChange={handleAvatarChange}
+                    />
                   </div>
+
                   <div>
                     <p className="font-display text-lg font-light text-foreground tracking-display">
                       {[profile.first_name, profile.surname].filter(Boolean).join(" ") || "Your Name"}
@@ -122,11 +222,20 @@ const Profile = () => {
                     <p className="text-[11px] tracking-eyebrow uppercase font-semibold text-muted-foreground/60">
                       {profile.branch || "NBA Member"}
                     </p>
+                    <button
+                      type="button"
+                      onClick={handleAvatarClick}
+                      disabled={uploadingAvatar}
+                      className="text-xs text-primary hover:text-accent transition-colors mt-1.5 font-medium"
+                    >
+                      {uploadingAvatar ? "Uploading..." : avatarUrl ? "Change photo" : "Upload photo"}
+                    </button>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
+            {/* Field groups */}
             {FIELD_GROUPS.map((group) => (
               <Card key={group.title} className="shadow-soft border border-border/60">
                 <CardContent className="p-6 space-y-5">
