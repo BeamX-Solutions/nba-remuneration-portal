@@ -88,9 +88,18 @@ function escaped(text: string): string {
   return div.innerHTML;
 }
 
+function formDataToText(formData: unknown): string {
+  if (!formData || typeof formData !== "object") return String(formData ?? "");
+  return Object.entries(formData as Record<string, string>)
+    .filter(([, v]) => v)
+    .map(([k, v]) => `${k.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}: ${v}`)
+    .join("\n");
+}
+
 export const exportDocument = (doc: any) => {
   const filename = doc.reference_number || `document-${doc.id}`;
-  exportDocumentToPDF(filename, doc.title || "Legal Document", doc.content || doc.form_data || "", {
+  const content = doc.content || formDataToText(doc.form_data);
+  exportDocumentToPDF(filename, doc.title || "Legal Document", content, {
     referenceNumber: doc.reference_number,
     ban: doc.ban,
     status: doc.status === "completed" ? "Completed" : "Draft",

@@ -31,32 +31,34 @@ const RemunerationDashboard = () => {
   useEffect(() => {
     if (!user) return;
 
-    supabase
+    const profileQ = supabase
       .from("profiles")
       .select("first_name")
       .eq("user_id", user.id)
-      .maybeSingle()
-      .then(({ data }) => { if (data?.first_name) setFirstName(data.first_name); });
+      .maybeSingle();
 
-    supabase
+    const announcementsQ = supabase
       .from("announcements")
       .select("id, title, content, created_at")
       .or("portal.eq.remuneration,portal.eq.both")
       .eq("published", true)
       .order("created_at", { ascending: false })
-      .limit(3)
-      .then(({ data }) => setAnnouncements(data || []));
+      .limit(3);
 
-    supabase
+    const documentsQ = supabase
       .from("documents")
       .select("id, title, document_type, status, approval_status, approved_at, created_at, reference_number, form_data")
       .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .then(({ data }) => {
-        const docs = data || [];
+      .order("created_at", { ascending: false });
+
+    Promise.all([profileQ, announcementsQ, documentsQ])
+      .then(([profile, announcements, documents]) => {
+        if (profile.data?.first_name) setFirstName(profile.data.first_name);
+        setAnnouncements(announcements.data || []);
+
+        const docs = documents.data || [];
         const cutoff = new Date();
         cutoff.setDate(cutoff.getDate() - 30);
-
         setCounts({
           drafts: docs.filter((d) => d.status === "draft").length,
           pending: docs.filter((d) => d.approval_status === "submitted" || d.approval_status === "pending").length,
@@ -65,8 +67,9 @@ const RemunerationDashboard = () => {
           ).length,
         });
         setRecentDocs(docs.slice(0, 5));
-        setLoading(false);
-      });
+      })
+      .catch(() => {/* queries failed — loading will clear in finally */})
+      .finally(() => setLoading(false));
   }, [user]);
 
   const getAmount = (doc: any) => {

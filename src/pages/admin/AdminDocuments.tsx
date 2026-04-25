@@ -8,11 +8,12 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { DOC_TYPE_LABELS } from "@/lib/constants";
+import type { PortalDocument, MemberProfile } from "@/types/portal";
 
 const AdminDocuments = () => {
-  const [documents, setDocuments] = useState<any[]>([]);
-  const [filtered, setFiltered] = useState<any[]>([]);
-  const [profiles, setProfiles] = useState<Record<string, any>>({});
+  const [documents, setDocuments] = useState<PortalDocument[]>([]);
+  const [filtered, setFiltered] = useState<PortalDocument[]>([]);
+  const [profiles, setProfiles] = useState<Record<string, MemberProfile>>({});
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);

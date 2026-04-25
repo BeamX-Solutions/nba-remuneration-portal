@@ -7,10 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import type { MemberProfile } from "@/types/portal";
 
 const AdminRemunerationMembers = () => {
-  const [members, setMembers] = useState<any[]>([]);
-  const [filtered, setFiltered] = useState<any[]>([]);
+  const [members, setMembers] = useState<MemberProfile[]>([]);
+  const [filtered, setFiltered] = useState<MemberProfile[]>([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -57,7 +58,7 @@ const AdminRemunerationMembers = () => {
     debounceRef.current = setTimeout(() => {
       const q = value.toLowerCase().trim();
       setFiltered(!q ? members : members.filter((m) =>
-        [m.first_name, m.surname, m.email, m.branch, m.phone].some((v) => v?.toLowerCase().includes(q))
+        [m.first_name, m.surname, m.email, m.branch, m.phone, m.ban].some((v) => v?.toLowerCase().includes(q))
       ));
     }, 200);
   };
