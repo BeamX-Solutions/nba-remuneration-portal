@@ -34,10 +34,12 @@ const SignIn = () => {
 
   const handleGoogle = async () => {
     setGoogleLoading(true);
+    const reset = setTimeout(() => setGoogleLoading(false), 10000);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: `${window.location.origin}/dashboard` },
     });
+    clearTimeout(reset);
     if (error) {
       setGoogleLoading(false);
       toast({ title: "Google sign in failed", description: error.message, variant: "destructive" });

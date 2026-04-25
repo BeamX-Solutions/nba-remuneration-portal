@@ -23,7 +23,20 @@ const STEPS = [
 
 type DocType = "deed_of_assignment" | "deed_of_gift" | "mortgage_deed" | "power_of_attorney" | "contract_of_sale" | "tenancy_agreement";
 
-interface FieldDef { key: string; label: string; required?: boolean; fullWidth?: boolean; }
+interface FieldDef { key: string; label: string; required?: boolean; fullWidth?: boolean; type?: "select"; options?: string[]; }
+
+const ROOT_OF_TITLE_OPTIONS = [
+  "Deed of Assignment",
+  "Certificate of Occupancy (C of O)",
+  "Statutory Right of Occupancy (S.R.O.)",
+  "Deed of Gift",
+  "Mortgage Deed (Discharged)",
+  "Court Order / Judgment",
+  "Excision / Gazette Notice",
+  "Letter of Administration",
+  "Grant of Probate",
+  "Power of Attorney (Prior Transaction)",
+];
 
 const DOC_TYPES: { value: DocType; label: string; partyLabels: [string, string]; fields: FieldDef[] }[] = [
   {
@@ -37,6 +50,10 @@ const DOC_TYPES: { value: DocType; label: string; partyLabels: [string, string];
       { key: "consideration", label: "Consideration Value (₦)", required: true },
       { key: "survey_plan_no", label: "Survey Plan No (Optional)" },
       { key: "beacon_nos", label: "Beacon Nos. (Optional)" },
+      { key: "root_of_title", label: "Root of Title (How Assignor Acquired)", required: true, fullWidth: true, type: "select", options: ROOT_OF_TITLE_OPTIONS },
+      { key: "root_of_title_date", label: "Date of Root Title Instrument", required: true },
+      { key: "root_of_title_ref", label: "Root Title Reference / Number", required: true },
+      { key: "title_doc_ref", label: "Title Document Reference (Optional)" },
     ],
   },
   {
@@ -49,6 +66,10 @@ const DOC_TYPES: { value: DocType; label: string; partyLabels: [string, string];
       { key: "land_address", label: "Full Address of Property", required: true, fullWidth: true },
       { key: "survey_plan_no", label: "Survey Plan No (Optional)" },
       { key: "beacon_nos", label: "Beacon Nos. (Optional)" },
+      { key: "root_of_title", label: "Root of Title (How Donor Acquired)", required: true, fullWidth: true, type: "select", options: ROOT_OF_TITLE_OPTIONS },
+      { key: "root_of_title_date", label: "Date of Root Title Instrument", required: true },
+      { key: "root_of_title_ref", label: "Root Title Reference / Number", required: true },
+      { key: "title_doc_ref", label: "Title Document Reference (Optional)" },
     ],
   },
   {
@@ -63,6 +84,10 @@ const DOC_TYPES: { value: DocType; label: string; partyLabels: [string, string];
       { key: "interest_rate", label: "Interest Rate (%)", required: true },
       { key: "repayment_period", label: "Repayment Period", required: true },
       { key: "survey_plan_no", label: "Survey Plan No (Optional)" },
+      { key: "root_of_title", label: "Root of Title (How Mortgagor Acquired)", required: true, fullWidth: true, type: "select", options: ROOT_OF_TITLE_OPTIONS },
+      { key: "root_of_title_date", label: "Date of Root Title Instrument", required: true },
+      { key: "root_of_title_ref", label: "Root Title Reference / Number", required: true },
+      { key: "title_doc_ref", label: "Title Document Reference (Optional)" },
     ],
   },
   {
@@ -74,7 +99,7 @@ const DOC_TYPES: { value: DocType; label: string; partyLabels: [string, string];
       { key: "donee_address", label: "Address", required: true },
       { key: "scope_of_authority", label: "Scope of Authority", required: true, fullWidth: true },
       { key: "land_address", label: "Address of Property (if applicable)" },
-      { key: "duration", label: "Duration / Expiry" },
+      { key: "duration", label: "Duration / Expiry (leave blank if unless-revoked)" },
     ],
   },
   {
@@ -87,8 +112,10 @@ const DOC_TYPES: { value: DocType; label: string; partyLabels: [string, string];
       { key: "land_address", label: "Full Address of Property", required: true, fullWidth: true },
       { key: "consideration", label: "Purchase Price (₦)", required: true },
       { key: "deposit_amount", label: "Deposit Amount (₦)" },
-      { key: "completion_date", label: "Completion Date" },
+      { key: "completion_date", label: "Completion Date", required: true },
+      { key: "investigation_period", label: "Investigation of Title Period (e.g. 21 days)", required: true },
       { key: "survey_plan_no", label: "Survey Plan No (Optional)" },
+      { key: "title_doc_ref", label: "Title Document Reference (Optional)" },
     ],
   },
   {
@@ -102,6 +129,8 @@ const DOC_TYPES: { value: DocType; label: string; partyLabels: [string, string];
       { key: "consideration", label: "Annual Rent (₦)", required: true },
       { key: "tenancy_duration", label: "Duration of Tenancy", required: true },
       { key: "commencement_date", label: "Commencement Date", required: true },
+      { key: "notice_period", label: "Notice Period for Termination", required: true },
+      { key: "service_address", label: "Address for Service of Notices", fullWidth: true },
     ],
   },
 ];
@@ -145,8 +174,15 @@ const PrepareDocument = () => {
         body: { formData, method: "ai", documentType: docType },
       });
       if (response.error) throw new Error(response.error.message);
-      setGeneratedContent(response.data?.content || generateFallbackDocument(docType, formData));
-    } catch {
+      const aiContent = response.data?.content;
+      if (!aiContent) throw new Error("Empty response from AI");
+      setGeneratedContent(aiContent);
+    } catch (err: any) {
+      toast({
+        title: "AI generation unavailable",
+        description: "Falling back to standard template. Check that the ANTHROPIC_API_KEY is set in your Supabase project secrets.",
+        variant: "destructive",
+      });
       setGeneratedContent(generateFallbackDocument(docType, formData));
     }
     setGenerating(false);
@@ -164,8 +200,15 @@ const PrepareDocument = () => {
         body: { precedentText, method: "precedent" },
       });
       if (response.error) throw new Error(response.error.message);
-      setGeneratedContent(response.data?.content || precedentText);
+      const aiContent = response.data?.content;
+      if (!aiContent) throw new Error("Empty response from AI");
+      setGeneratedContent(aiContent);
     } catch {
+      toast({
+        title: "AI reformatting unavailable",
+        description: "Using your precedent as-is. Check that the ANTHROPIC_API_KEY is set in your Supabase project secrets.",
+        variant: "destructive",
+      });
       setGeneratedContent(precedentText);
     }
     setGenerating(false);
@@ -262,7 +305,21 @@ const PrepareDocument = () => {
       <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
         {field.label}{field.required && <span className="text-destructive ml-0.5">*</span>}
       </label>
-      {field.key === "scope_of_authority" ? (
+      {field.type === "select" && field.options ? (
+        <Select
+          value={formData[field.key] || ""}
+          onValueChange={(v) => setFormData((prev) => ({ ...prev, [field.key]: v }))}
+        >
+          <SelectTrigger className="mt-1">
+            <SelectValue placeholder={`Select ${field.label}`} />
+          </SelectTrigger>
+          <SelectContent>
+            {field.options.map((opt) => (
+              <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      ) : field.key === "scope_of_authority" ? (
         <textarea
           rows={3}
           value={formData[field.key] || ""}

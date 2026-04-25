@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { Search, FileText, ChevronDown, ChevronUp, CheckCircle } from "lucide-react";
+import { Search, FileText, ChevronDown, ChevronUp, CheckCircle, Download } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 import PageHeader from "@/components/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
@@ -49,6 +49,30 @@ const AdminDocuments = () => {
     }, 200);
   };
 
+  const handleExportCSV = () => {
+    const rows = [
+      ["Reference", "Title", "Document Type", "Member", "Status", "Date"],
+      ...documents.map((d) => {
+        const profile = profiles[d.user_id];
+        const member = [profile?.surname, profile?.first_name].filter(Boolean).join(" ") || profile?.email || "—";
+        return [
+          d.reference_number || d.id.slice(0, 8),
+          d.title,
+          DOC_TYPE_LABELS[d.document_type] || d.document_type,
+          member,
+          d.status,
+          new Date(d.created_at).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" }),
+        ];
+      }),
+    ];
+    const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `documents-${Date.now()}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const markCompleted = async (doc: any) => {
     const { error } = await supabase.from("documents").update({ status: "completed" }).eq("id", doc.id);
     if (error) { toast({ title: "Failed", description: error.message, variant: "destructive" }); return; }
@@ -74,7 +98,16 @@ const AdminDocuments = () => {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <PageHeader eyebrow="Admin Panel" title="Documents" subtitle={`${documents.length} document${documents.length !== 1 ? "s" : ""} prepared.`} />
+        <PageHeader
+          eyebrow="Admin Panel"
+          title="Documents"
+          subtitle={`${documents.length} document${documents.length !== 1 ? "s" : ""} prepared.`}
+          action={documents.length > 0 ? (
+            <Button variant="outline" size="sm" onClick={handleExportCSV} className="gap-1.5">
+              <Download className="h-4 w-4" /> Export CSV
+            </Button>
+          ) : undefined}
+        />
 
         <Card className="shadow-card">
           <CardContent className="p-4">

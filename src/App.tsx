@@ -30,6 +30,7 @@ import RemunerationNotifications from "./pages/remuneration/RemunerationNotifica
 import RemunerationAbout from "./pages/remuneration/RemunerationAbout.tsx";
 import Resources from "./pages/Resources.tsx";
 import Guidelines from "./pages/remuneration/Guidelines.tsx";
+import FeeCalculator from "./pages/remuneration/FeeCalculator.tsx";
 import Profile from "./pages/remuneration/Profile.tsx";
 import Settings from "./pages/remuneration/Settings.tsx";
 
@@ -80,6 +81,7 @@ const App = () => (
               <Route path="/dashboard/about" element={<ProtectedRoute><RemunerationAbout /></ProtectedRoute>} />
               <Route path="/resources" element={<ProtectedRoute><Resources /></ProtectedRoute>} />
               <Route path="/dashboard/guidelines" element={<ProtectedRoute><Guidelines /></ProtectedRoute>} />
+              <Route path="/dashboard/fees" element={<ProtectedRoute><FeeCalculator /></ProtectedRoute>} />
               <Route path="/dashboard/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/dashboard/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
 

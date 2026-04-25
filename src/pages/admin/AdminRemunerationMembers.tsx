@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { Search, User, Scale, ChevronDown, ChevronUp, Ban, CheckCircle, UserCheck } from "lucide-react";
+import { Search, User, Scale, ChevronDown, ChevronUp, Ban, CheckCircle, UserCheck, Download } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 import PageHeader from "@/components/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
@@ -26,6 +26,28 @@ const AdminRemunerationMembers = () => {
         setLoading(false);
       });
   }, []);
+
+  const handleExportCSV = () => {
+    const rows = [
+      ["Name", "Email", "BAN", "Branch", "Year of Call", "Phone", "Status", "Joined"],
+      ...members.map((m) => [
+        [m.surname, m.first_name, m.middle_name].filter(Boolean).join(" ") || "—",
+        m.email || "—",
+        m.ban || "—",
+        m.branch || "—",
+        m.year_of_call || "—",
+        m.phone || "—",
+        m.status || "—",
+        new Date(m.created_at).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" }),
+      ]),
+    ];
+    const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `members-${Date.now()}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -74,7 +96,16 @@ const AdminRemunerationMembers = () => {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <PageHeader eyebrow="Admin Panel" title="Members" subtitle={`${members.length} member${members.length !== 1 ? "s" : ""} registered.`} />
+        <PageHeader
+          eyebrow="Admin Panel"
+          title="Members"
+          subtitle={`${members.length} member${members.length !== 1 ? "s" : ""} registered.`}
+          action={members.length > 0 ? (
+            <Button variant="outline" size="sm" onClick={handleExportCSV} className="gap-1.5">
+              <Download className="h-4 w-4" /> Export CSV
+            </Button>
+          ) : undefined}
+        />
 
         <Card className="shadow-card">
           <CardContent className="p-4">
