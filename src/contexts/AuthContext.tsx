@@ -11,6 +11,7 @@ interface AuthContextType {
   profileName: string | null;
   profileBranch: string | null;
   profileAvatar: string | null;
+  isAdmin: boolean;
   refreshProfile: () => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -24,6 +25,7 @@ const AuthContext = createContext<AuthContextType>({
   profileName: null,
   profileBranch: null,
   profileAvatar: null,
+  isAdmin: false,
   refreshProfile: async () => {},
   signOut: async () => {},
 });
@@ -39,11 +41,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profileName, setProfileName] = useState<string | null>(null);
   const [profileBranch, setProfileBranch] = useState<string | null>(null);
   const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
   const checkProfile = useCallback(async (userId: string) => {
     const { data, error } = await supabase
       .from("profiles")
-      .select("first_name, surname, status, branch, avatar_url")
+      .select("first_name, surname, status, branch, avatar_url, is_admin")
       .eq("user_id", userId)
       .maybeSingle();
     if (error) return;
@@ -53,6 +56,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setProfileName(name || null);
     setProfileBranch(data?.branch ?? null);
     setProfileAvatar(data?.avatar_url ?? null);
+    setIsAdmin(!!(data as any)?.is_admin);
   }, []);
 
   const refreshProfile = useCallback(async () => {
@@ -96,6 +100,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setProfileName(name || null);
           setProfileBranch(p.branch ?? null);
           setProfileAvatar(p.avatar_url ?? null);
+          setIsAdmin(!!p.is_admin);
         }
       })
       .subscribe((status) => {
@@ -111,10 +116,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setProfileName(null);
     setProfileBranch(null);
     setProfileAvatar(null);
+    setIsAdmin(false);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, profileComplete, profileStatus, profileName, profileBranch, profileAvatar, refreshProfile, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, profileComplete, profileStatus, profileName, profileBranch, profileAvatar, isAdmin, refreshProfile, signOut }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,16 +1,27 @@
 import { useEffect, useState, useRef } from "react";
-import { Search, FileText, ChevronDown, ChevronUp, CheckCircle, Download } from "lucide-react";
+import { Search, FileText, ChevronDown, ChevronUp, CheckCircle, Download, CreditCard } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 import PageHeader from "@/components/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { DOC_TYPE_LABELS } from "@/lib/constants";
+import { logAudit } from "@/lib/auditLog";
 import type { PortalDocument, MemberProfile } from "@/types/portal";
 
+const PAYMENT_METHODS = [
+  { value: "secretariat", label: "Secretariat Counter" },
+  { value: "bank_transfer", label: "Bank Transfer" },
+  { value: "cheque", label: "Cheque" },
+  { value: "cash", label: "Cash" },
+];
+
 const AdminDocuments = () => {
+  const { user } = useAuth();
   const [documents, setDocuments] = useState<PortalDocument[]>([]);
   const [filtered, setFiltered] = useState<PortalDocument[]>([]);
   const [profiles, setProfiles] = useState<Record<string, MemberProfile>>({});
@@ -18,6 +29,14 @@ const AdminDocuments = () => {
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
   const { toast } = useToast();
+
+  // Payment dialog state
+  const [payingDoc, setPayingDoc] = useState<PortalDocument | null>(null);
+  const [payAmount, setPayAmount] = useState("");
+  const [payMethod, setPayMethod] = useState("secretariat");
+  const [payRef, setPayRef] = useState("");
+  const [payNotes, setPayNotes] = useState("");
+  const [paying, setPaying] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -91,9 +110,69 @@ const AdminDocuments = () => {
         body: { type: "document_completed", to: profile.email, name, document_type: label, title: doc.title, reference_number: doc.reference_number || "N/A" },
       });
     }
+    if (user) {
+      logAudit(user.id, "document_completed", "document", doc.id, {
+        document_title: doc.title,
+        reference_number: doc.reference_number ?? undefined,
+        member_email: profile?.email ?? undefined,
+      });
+    }
     const updated = documents.map((d) => d.id === doc.id ? { ...d, status: "completed" } : d);
-    setDocuments(updated); setFiltered(updated);
+    setDocuments(updated as PortalDocument[]); setFiltered(updated as PortalDocument[]);
     toast({ title: "Document marked as completed", description: "The member has been notified." });
+  };
+
+  const openPaymentDialog = (doc: PortalDocument) => {
+    const consideration = (doc.form_data as any)?.consideration;
+    const prefilledAmount = consideration
+      ? (parseFloat(consideration.replace(/,/g, "")) * 0.1).toFixed(2)
+      : "";
+    setPayingDoc(doc);
+    setPayAmount(prefilledAmount);
+    setPayMethod("secretariat");
+    setPayRef("");
+    setPayNotes("");
+  };
+
+  const handleRecordPayment = async () => {
+    if (!payingDoc || !user) return;
+    const amount = parseFloat(payAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast({ title: "Invalid amount", description: "Please enter a valid payment amount.", variant: "destructive" });
+      return;
+    }
+    setPaying(true);
+    const { error } = await (supabase as any).from("payments").insert({
+      document_id: payingDoc.id,
+      user_id: payingDoc.user_id,
+      amount,
+      payment_method: payMethod,
+      reference: payRef || null,
+      notes: payNotes || null,
+      recorded_by: user.id,
+    });
+    if (error) {
+      toast({ title: "Failed to record payment", description: error.message, variant: "destructive" });
+      setPaying(false);
+      return;
+    }
+
+    const profile = profiles[payingDoc.user_id];
+    logAudit(user.id, "payment_recorded", "document", payingDoc.id, {
+      document_title: payingDoc.title,
+      amount,
+      payment_method: payMethod,
+      member_email: profile?.email ?? undefined,
+    });
+
+    // Auto-complete the document if it isn't already
+    if (payingDoc.status !== "completed") {
+      await markCompleted(payingDoc);
+    }
+
+    setPaying(false);
+    setPayingDoc(null);
+    toast({ title: "Payment recorded", description: `₦${amount.toLocaleString("en-NG", { minimumFractionDigits: 2 })} recorded successfully.` });
   };
 
   return (
@@ -136,6 +215,7 @@ const AdminDocuments = () => {
               const profile = profiles[doc.user_id];
               const isExpanded = expanded === doc.id;
               const formData = (doc.form_data as Record<string, any>) || {};
+              const showPayment = doc.approval_status === "approved";
               return (
                 <Card key={doc.id} className="shadow-card">
                   <CardContent className="p-4">
@@ -165,11 +245,18 @@ const AdminDocuments = () => {
                         {doc.content && (
                           <div className="bg-muted/50 rounded-md p-4 text-sm text-foreground whitespace-pre-wrap max-h-80 overflow-y-auto font-mono">{doc.content}</div>
                         )}
-                        {doc.status === "draft" && (
-                          <Button size="sm" onClick={() => markCompleted(doc)}>
-                            <CheckCircle className="h-4 w-4 mr-1" />Mark as Completed
-                          </Button>
-                        )}
+                        <div className="flex flex-wrap gap-2">
+                          {doc.status === "draft" && (
+                            <Button size="sm" onClick={() => markCompleted(doc)}>
+                              <CheckCircle className="h-4 w-4 mr-1" />Mark as Completed
+                            </Button>
+                          )}
+                          {showPayment && (
+                            <Button size="sm" variant="outline" onClick={() => openPaymentDialog(doc)} className="gap-1.5">
+                              <CreditCard className="h-4 w-4" />Record Payment
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     )}
                   </CardContent>
@@ -179,6 +266,68 @@ const AdminDocuments = () => {
           </div>
         )}
       </div>
+
+      {/* Record Payment Dialog */}
+      <Dialog open={!!payingDoc} onOpenChange={(open) => { if (!open) setPayingDoc(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Record Payment</DialogTitle>
+            <DialogDescription>
+              {payingDoc?.title} · {payingDoc?.reference_number || "No ref"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <label className="text-xs font-semibold tracking-eyebrow uppercase text-muted-foreground block mb-1.5">Amount (₦)</label>
+              <input
+                type="number"
+                value={payAmount}
+                onChange={(e) => setPayAmount(e.target.value)}
+                placeholder="0.00"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold tracking-eyebrow uppercase text-muted-foreground block mb-1.5">Payment Method</label>
+              <select
+                value={payMethod}
+                onChange={(e) => setPayMethod(e.target.value)}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                {PAYMENT_METHODS.map((m) => (
+                  <option key={m.value} value={m.value}>{m.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-semibold tracking-eyebrow uppercase text-muted-foreground block mb-1.5">Reference / Receipt No. <span className="font-normal">(optional)</span></label>
+              <input
+                type="text"
+                value={payRef}
+                onChange={(e) => setPayRef(e.target.value)}
+                placeholder="e.g. TXN-001234"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold tracking-eyebrow uppercase text-muted-foreground block mb-1.5">Notes <span className="font-normal">(optional)</span></label>
+              <textarea
+                value={payNotes}
+                onChange={(e) => setPayNotes(e.target.value)}
+                rows={2}
+                placeholder="Any additional notes..."
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPayingDoc(null)} disabled={paying}>Cancel</Button>
+            <Button onClick={handleRecordPayment} disabled={paying}>
+              {paying ? "Recording..." : "Record Payment"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 };

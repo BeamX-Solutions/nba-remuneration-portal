@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ORDER_TITLE, calcDocFee } from "@/lib/constants";
 
 const STEPS = [
   { num: 1, label: "Prepare" },
@@ -21,7 +22,7 @@ const STEPS = [
   { num: 4, label: "Final Document" },
 ];
 
-type DocType = "deed_of_assignment" | "deed_of_gift" | "mortgage_deed" | "power_of_attorney" | "contract_of_sale" | "tenancy_agreement";
+type DocType = "deed_of_assignment" | "deed_of_gift" | "mortgage_deed" | "power_of_attorney" | "contract_of_sale" | "tenancy_agreement" | "deed_of_lease" | "deed_of_sub_lease" | "deed_of_surrender" | "deed_of_release" | "deed_of_exchange";
 
 interface FieldDef { key: string; label: string; required?: boolean; fullWidth?: boolean; type?: "select"; options?: string[]; }
 
@@ -131,6 +132,87 @@ const DOC_TYPES: { value: DocType; label: string; partyLabels: [string, string];
       { key: "commencement_date", label: "Commencement Date", required: true },
       { key: "notice_period", label: "Notice Period for Termination", required: true },
       { key: "service_address", label: "Address for Service of Notices", fullWidth: true },
+    ],
+  },
+  {
+    value: "deed_of_lease", label: "Deed of Lease", partyLabels: ["LESSOR / LANDLORD", "LESSEE / TENANT"],
+    fields: [
+      { key: "donor_name", label: "Name", required: true },
+      { key: "donor_address", label: "Address", required: true },
+      { key: "donee_name", label: "Name", required: true },
+      { key: "donee_address", label: "Address", required: true },
+      { key: "land_address", label: "Full Address of Property", required: true, fullWidth: true },
+      { key: "consideration", label: "Annual Rent (₦)", required: true },
+      { key: "lease_term", label: "Lease Term (e.g. 21 years)", required: true },
+      { key: "commencement_date", label: "Commencement Date", required: true },
+      { key: "survey_plan_no", label: "Survey Plan No. (Optional)" },
+      { key: "root_of_title", label: "Root of Title (How Lessor Acquired)", required: true, fullWidth: true, type: "select", options: ROOT_OF_TITLE_OPTIONS },
+      { key: "root_of_title_date", label: "Date of Root Title Instrument", required: true },
+      { key: "title_doc_ref", label: "Title Document Reference (Optional)" },
+      { key: "service_address", label: "Address for Service of Notices", fullWidth: true },
+    ],
+  },
+  {
+    value: "deed_of_sub_lease", label: "Deed of Sub-Lease", partyLabels: ["SUB-LESSOR", "SUB-LESSEE"],
+    fields: [
+      { key: "donor_name", label: "Name", required: true },
+      { key: "donor_address", label: "Address", required: true },
+      { key: "donee_name", label: "Name", required: true },
+      { key: "donee_address", label: "Address", required: true },
+      { key: "land_address", label: "Full Address of Property", required: true, fullWidth: true },
+      { key: "consideration", label: "Annual Rent (₦)", required: true },
+      { key: "sub_lease_term", label: "Sub-Lease Term (e.g. 3 years)", required: true },
+      { key: "commencement_date", label: "Commencement Date", required: true },
+      { key: "head_lease_ref", label: "Head Lease Reference", required: true },
+      { key: "survey_plan_no", label: "Survey Plan No. (Optional)" },
+      { key: "service_address", label: "Address for Service of Notices", fullWidth: true },
+    ],
+  },
+  {
+    value: "deed_of_surrender", label: "Deed of Surrender", partyLabels: ["SURRENDEROR (LEASEHOLDER)", "SURRENDEREE (LANDLORD / GRANTOR)"],
+    fields: [
+      { key: "donor_name", label: "Name", required: true },
+      { key: "donor_address", label: "Address", required: true },
+      { key: "donee_name", label: "Name", required: true },
+      { key: "donee_address", label: "Address", required: true },
+      { key: "land_address", label: "Full Address of Property", required: true, fullWidth: true },
+      { key: "original_lease_ref", label: "Original Lease Reference", required: true },
+      { key: "original_lease_term", label: "Original Lease Term", required: true },
+      { key: "surrender_date", label: "Surrender Effective Date", required: true },
+      { key: "consideration", label: "Surrender Premium (₦) — enter 0 if none" },
+      { key: "survey_plan_no", label: "Survey Plan No. (Optional)" },
+    ],
+  },
+  {
+    value: "deed_of_release", label: "Deed of Release / Discharge of Mortgage", partyLabels: ["MORTGAGEE / LENDER", "MORTGAGOR / BORROWER"],
+    fields: [
+      { key: "donor_name", label: "Name", required: true },
+      { key: "donor_address", label: "Address", required: true },
+      { key: "donee_name", label: "Name", required: true },
+      { key: "donee_address", label: "Address", required: true },
+      { key: "land_address", label: "Full Address of Property", required: true, fullWidth: true },
+      { key: "original_mortgage_ref", label: "Original Mortgage Deed Reference", required: true },
+      { key: "original_mortgage_date", label: "Date of Original Mortgage", required: true },
+      { key: "consideration", label: "Original Loan Amount (₦)", required: true },
+      { key: "discharge_date", label: "Date of Full Repayment / Discharge", required: true },
+      { key: "survey_plan_no", label: "Survey Plan No. (Optional)" },
+    ],
+  },
+  {
+    value: "deed_of_exchange", label: "Deed of Exchange", partyLabels: ["FIRST PARTY", "SECOND PARTY"],
+    fields: [
+      { key: "donor_name", label: "Name", required: true },
+      { key: "donor_address", label: "Address", required: true },
+      { key: "donee_name", label: "Name", required: true },
+      { key: "donee_address", label: "Address", required: true },
+      { key: "first_property_address", label: "First Property Address (given by First Party)", required: true, fullWidth: true },
+      { key: "second_property_address", label: "Second Property Address (given by Second Party)", required: true, fullWidth: true },
+      { key: "first_property_value", label: "First Property Value (₦)", required: true },
+      { key: "second_property_value", label: "Second Property Value (₦)", required: true },
+      { key: "consideration", label: "Balancing Payment (₦) — enter 0 if equal value" },
+      { key: "first_survey_plan", label: "Survey Plan No. (First Property)" },
+      { key: "second_survey_plan", label: "Survey Plan No. (Second Property)" },
+      { key: "root_of_title", label: "Root of Title (First Property)", required: true, fullWidth: true, type: "select", options: ROOT_OF_TITLE_OPTIONS },
     ],
   },
 ];
@@ -571,35 +653,49 @@ const PrepareDocument = () => {
         )}
 
         {/* Step 3: Payment */}
-        {currentStep === 3 && (
-          <Card className="shadow-card">
-            <CardContent className="p-4 sm:p-8 space-y-6 text-center">
-              <h3 className="font-heading text-xl font-semibold">Payment</h3>
-              <p className="text-muted-foreground text-sm max-w-md mx-auto">
-                In line with the <strong>Legal Practitioners' Remuneration Order 2023</strong>, a fee of{" "}
-                <strong>10% of the consideration</strong> is due before the final document is issued.
-              </p>
-              {formData.consideration && (
-                <div className="inline-block bg-accent/10 border border-accent/30 rounded-xl px-5 py-5 sm:px-8 w-full sm:w-auto">
-                  <p className="text-sm text-muted-foreground">Amount Due</p>
-                  <p className="font-heading text-3xl font-bold text-primary mt-1">
-                    ₦{(parseFloat(formData.consideration.replace(/,/g, "")) * 0.1).toLocaleString("en-NG", { minimumFractionDigits: 2 })}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1.5">10% of ₦{formData.consideration}</p>
+        {currentStep === 3 && (() => {
+          const fee = calcDocFee(formData, docType);
+          const isPOA = docType === "power_of_attorney";
+          return (
+            <Card className="shadow-card">
+              <CardContent className="p-4 sm:p-8 space-y-6 text-center">
+                <h3 className="font-heading text-xl font-semibold">Payment</h3>
+                <p className="text-muted-foreground text-sm max-w-md mx-auto">
+                  In line with the <strong>{ORDER_TITLE}</strong>, the remuneration fee due is shown below.
+                </p>
+                {isPOA ? (
+                  <div className="inline-block bg-accent/10 border border-accent/30 rounded-xl px-5 py-5 sm:px-8 w-full sm:w-auto">
+                    <p className="text-sm text-muted-foreground">Fee Assessment</p>
+                    <p className="font-heading text-lg font-semibold text-primary mt-1">Flat fee — contact your branch</p>
+                    <p className="text-xs text-muted-foreground mt-1.5">Power of Attorney fees are assessed under paragraph 2 of the Order and agreed with your branch.</p>
+                  </div>
+                ) : fee !== null && fee > 0 ? (
+                  <div className="inline-block bg-accent/10 border border-accent/30 rounded-xl px-5 py-5 sm:px-8 w-full sm:w-auto">
+                    <p className="text-sm text-muted-foreground">Drafting LP Fee (full scale)</p>
+                    <p className="font-heading text-3xl font-bold text-primary mt-1">
+                      ₦{fee.toLocaleString("en-NG", { minimumFractionDigits: 2 })}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1.5">
+                      Calculated under Scale 4 · {ORDER_TITLE}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Other party's LP is entitled to half: ₦{(fee / 2).toLocaleString("en-NG", { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                ) : null}
+                <p className="text-xs text-muted-foreground">
+                  Payment gateway coming soon. Save as draft and complete payment at the secretariat.
+                </p>
+                <div className="flex gap-3 justify-center flex-wrap">
+                  <Button variant="outline" onClick={() => setCurrentStep(2)}>← Back</Button>
+                  <Button onClick={handleSaveDocument} disabled={saving}>
+                    {saving ? "Saving..." : "Save Document as Draft"}
+                  </Button>
                 </div>
-              )}
-              <p className="text-xs text-muted-foreground">
-                Payment gateway coming soon. Save as draft and complete payment at the secretariat.
-              </p>
-              <div className="flex gap-3 justify-center flex-wrap">
-                <Button variant="outline" onClick={() => setCurrentStep(2)}>← Back</Button>
-                <Button onClick={handleSaveDocument} disabled={saving}>
-                  {saving ? "Saving..." : "Save Document as Draft"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+              </CardContent>
+            </Card>
+          );
+        })()}
 
         {/* Step 4: Confirmation */}
         {currentStep === 4 && (
@@ -610,7 +706,7 @@ const PrepareDocument = () => {
               </div>
               <h3 className="font-heading text-xl font-semibold">Document Saved Successfully</h3>
               <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-                Your document has been saved as a draft. Complete payment to receive the final BAIN-stamped document.
+                Your document has been saved as a draft. Submit it for approval and complete payment at the NBA secretariat to finalise.
               </p>
               <div className="flex gap-3 justify-center flex-wrap pt-2">
                 <Button variant="outline" onClick={resetForm}>Create Another</Button>
@@ -662,7 +758,7 @@ SIGNED by the Assignee: _________________________
 ${data.donee_name || "[ASSIGNEE]"}
 
 ---
-Generated in compliance with the Legal Practitioners' Remuneration Order 2023.`;
+Generated in compliance with the Legal Practitioners Remuneration (For Business, Legal Service and Representation) Order, 2023.`;
 
     case "deed_of_gift":
       return `DEED OF GIFT
@@ -694,7 +790,7 @@ SIGNED by the Donee: _________________________
 ${data.donee_name || "[DONEE]"}
 
 ---
-Generated in compliance with the Legal Practitioners' Remuneration Order 2023.`;
+Generated in compliance with the Legal Practitioners Remuneration (For Business, Legal Service and Representation) Order, 2023.`;
 
     case "mortgage_deed":
       return `MORTGAGE DEED
@@ -722,7 +818,7 @@ SIGNED by the Mortgagee: _________________________
 ${data.donee_name || "[MORTGAGEE]"}
 
 ---
-Generated in compliance with the Legal Practitioners' Remuneration Order 2023.`;
+Generated in compliance with the Legal Practitioners Remuneration (For Business, Legal Service and Representation) Order, 2023.`;
 
     case "power_of_attorney":
       return `POWER OF ATTORNEY
@@ -750,7 +846,7 @@ SIGNED by the Donor: _________________________
 ${data.donor_name || "[DONOR/PRINCIPAL]"}
 
 ---
-Generated in compliance with the Legal Practitioners' Remuneration Order 2023.`;
+Generated in compliance with the Legal Practitioners Remuneration (For Business, Legal Service and Representation) Order, 2023.`;
 
     case "contract_of_sale":
       return `CONTRACT OF SALE OF LAND
@@ -783,7 +879,7 @@ SIGNED by the Purchaser: _________________________
 ${data.donee_name || "[PURCHASER]"}
 
 ---
-Generated in compliance with the Legal Practitioners' Remuneration Order 2023.`;
+Generated in compliance with the Legal Practitioners Remuneration (For Business, Legal Service and Representation) Order, 2023.`;
 
     case "tenancy_agreement":
       return `TENANCY AGREEMENT
@@ -823,7 +919,196 @@ SIGNED by the Tenant: _________________________
 ${data.donee_name || "[TENANT]"}
 
 ---
-Generated in compliance with the Legal Practitioners' Remuneration Order 2023.`;
+Generated in compliance with the Legal Practitioners Remuneration (For Business, Legal Service and Representation) Order, 2023.`;
+
+    case "deed_of_lease":
+      return `DEED OF LEASE
+
+THIS DEED OF LEASE is made this ${today}
+
+BETWEEN
+
+${data.donor_name || "[LESSOR NAME]"} of ${data.donor_address || "[ADDRESS]"} (hereinafter called "the Lessor")
+
+OF THE ONE PART
+
+AND
+
+${data.donee_name || "[LESSEE NAME]"} of ${data.donee_address || "[ADDRESS]"} (hereinafter called "the Lessee")
+
+OF THE OTHER PART
+
+WHEREAS the Lessor is the beneficial owner of ALL THAT piece or parcel of land situate at ${data.land_address || "[PROPERTY ADDRESS]"}${data.survey_plan_no ? `, Survey Plan No. ${data.survey_plan_no}` : ""}.
+
+NOW THIS DEED WITNESSETH that in consideration of the annual rent of ₦${data.consideration || "[ANNUAL RENT]"} and the covenants herein contained, the Lessor hereby leases to the Lessee the said property for a term of ${data.lease_term || "[LEASE TERM]"} commencing on ${data.commencement_date || "[COMMENCEMENT DATE]"}.
+
+THE LESSEE COVENANTS:
+(a) To pay the reserved rent on the dates and in the manner stipulated;
+(b) To keep the premises in good and substantial repair;
+(c) Not to sublet or assign without the Lessor's written consent;
+(d) To yield up the premises at the end of the term in good repair.
+
+THE LESSOR COVENANTS:
+(a) To allow the Lessee quiet enjoyment of the premises during the term;
+(b) To carry out structural repairs within a reasonable time.
+
+IN WITNESS WHEREOF the parties have executed this Deed.
+
+SIGNED by the Lessor: _________________________
+${data.donor_name || "[LESSOR]"}
+
+SIGNED by the Lessee: _________________________
+${data.donee_name || "[LESSEE]"}
+
+---
+Generated in compliance with the Legal Practitioners Remuneration (For Business, Legal Service and Representation) Order, 2023.`;
+
+    case "deed_of_sub_lease":
+      return `DEED OF SUB-LEASE
+
+THIS DEED OF SUB-LEASE is made this ${today}
+
+BETWEEN
+
+${data.donor_name || "[SUB-LESSOR NAME]"} of ${data.donor_address || "[ADDRESS]"} (hereinafter called "the Sub-Lessor")
+
+OF THE ONE PART
+
+AND
+
+${data.donee_name || "[SUB-LESSEE NAME]"} of ${data.donee_address || "[ADDRESS]"} (hereinafter called "the Sub-Lessee")
+
+OF THE OTHER PART
+
+WHEREAS the Sub-Lessor holds the property situate at ${data.land_address || "[PROPERTY ADDRESS]"} under a Head Lease referenced as ${data.head_lease_ref || "[HEAD LEASE REFERENCE]"} and is entitled to sub-let the same.
+
+NOW THIS DEED WITNESSETH that in consideration of the annual rent of ₦${data.consideration || "[ANNUAL RENT]"} and the covenants herein contained, the Sub-Lessor hereby sub-lets to the Sub-Lessee the said property for a term of ${data.sub_lease_term || "[SUB-LEASE TERM]"} commencing on ${data.commencement_date || "[COMMENCEMENT DATE]"}.
+
+This Sub-Lease is subject to and has the benefit of all the covenants and conditions contained in the Head Lease insofar as they relate to the property sub-let.
+
+IN WITNESS WHEREOF the parties have executed this Deed.
+
+SIGNED by the Sub-Lessor: _________________________
+${data.donor_name || "[SUB-LESSOR]"}
+
+SIGNED by the Sub-Lessee: _________________________
+${data.donee_name || "[SUB-LESSEE]"}
+
+---
+Generated in compliance with the Legal Practitioners Remuneration (For Business, Legal Service and Representation) Order, 2023.`;
+
+    case "deed_of_surrender":
+      return `DEED OF SURRENDER
+
+THIS DEED OF SURRENDER is made this ${today}
+
+BETWEEN
+
+${data.donor_name || "[SURRENDEROR NAME]"} of ${data.donor_address || "[ADDRESS]"} (hereinafter called "the Surrenderor")
+
+OF THE ONE PART
+
+AND
+
+${data.donee_name || "[SURRENDEREE NAME]"} of ${data.donee_address || "[ADDRESS]"} (hereinafter called "the Surrenderee")
+
+OF THE OTHER PART
+
+WHEREAS the Surrenderor holds the property situate at ${data.land_address || "[PROPERTY ADDRESS]"}${data.survey_plan_no ? `, Survey Plan No. ${data.survey_plan_no}` : ""} under a Lease dated ${data.original_lease_ref || "[ORIGINAL LEASE REFERENCE]"} for a term of ${data.original_lease_term || "[ORIGINAL LEASE TERM]"}.
+
+AND WHEREAS the Surrenderor is desirous of surrendering the unexpired residue of the said Lease to the Surrenderee.
+
+NOW THIS DEED WITNESSETH that in consideration of the sum of ₦${data.consideration || "0"} (if any) and the mutual agreements herein, the Surrenderor hereby surrenders and yields up to the Surrenderee all the Surrenderor's estate and interest in the said property with effect from ${data.surrender_date || "[SURRENDER DATE]"}.
+
+The Surrenderee accepts this Surrender and the Lease shall merge and be extinguished in the Surrenderee's interest in the property.
+
+IN WITNESS WHEREOF the parties have executed this Deed.
+
+SIGNED by the Surrenderor: _________________________
+${data.donor_name || "[SURRENDEROR]"}
+
+SIGNED by the Surrenderee: _________________________
+${data.donee_name || "[SURRENDEREE]"}
+
+---
+Generated in compliance with the Legal Practitioners Remuneration (For Business, Legal Service and Representation) Order, 2023.`;
+
+    case "deed_of_release":
+      return `DEED OF RELEASE AND DISCHARGE OF MORTGAGE
+
+THIS DEED OF RELEASE AND DISCHARGE OF MORTGAGE is made this ${today}
+
+BETWEEN
+
+${data.donor_name || "[MORTGAGEE / LENDER NAME]"} of ${data.donor_address || "[ADDRESS]"} (hereinafter called "the Mortgagee")
+
+OF THE ONE PART
+
+AND
+
+${data.donee_name || "[MORTGAGOR / BORROWER NAME]"} of ${data.donee_address || "[ADDRESS]"} (hereinafter called "the Mortgagor")
+
+OF THE OTHER PART
+
+WHEREAS by a Mortgage Deed dated ${data.original_mortgage_date || "[ORIGINAL MORTGAGE DATE]"} and referenced as ${data.original_mortgage_ref || "[ORIGINAL MORTGAGE REFERENCE]"}, the Mortgagor charged and mortgaged ALL THAT property situate at ${data.land_address || "[PROPERTY ADDRESS]"}${data.survey_plan_no ? `, Survey Plan No. ${data.survey_plan_no}` : ""} to the Mortgagee as security for the sum of ₦${data.consideration || "[LOAN AMOUNT]"}.
+
+AND WHEREAS the Mortgagor has fully repaid the said principal sum together with all interest and other charges due thereunder as at ${data.discharge_date || "[DISCHARGE DATE]"}.
+
+NOW THIS DEED WITNESSETH that the Mortgagee hereby releases, discharges and reassigns to the Mortgagor all the Mortgagee's right, title, interest and benefit in and to the said property free from all encumbrances arising under the said Mortgage.
+
+The said Mortgage is hereby fully discharged and satisfied.
+
+IN WITNESS WHEREOF the Mortgagee has executed this Deed.
+
+SIGNED by the Mortgagee: _________________________
+${data.donor_name || "[MORTGAGEE]"}
+
+---
+Generated in compliance with the Legal Practitioners Remuneration (For Business, Legal Service and Representation) Order, 2023.`;
+
+    case "deed_of_exchange":
+      return `DEED OF EXCHANGE
+
+THIS DEED OF EXCHANGE is made this ${today}
+
+BETWEEN
+
+${data.donor_name || "[FIRST PARTY NAME]"} of ${data.donor_address || "[ADDRESS]"} (hereinafter called "the First Party")
+
+OF THE ONE PART
+
+AND
+
+${data.donee_name || "[SECOND PARTY NAME]"} of ${data.donee_address || "[ADDRESS]"} (hereinafter called "the Second Party")
+
+OF THE OTHER PART
+
+WHEREAS the First Party is the beneficial owner of ALL THAT piece or parcel of land situate at ${data.first_property_address || "[FIRST PROPERTY ADDRESS]"}${data.first_survey_plan ? `, Survey Plan No. ${data.first_survey_plan}` : ""} valued at ₦${data.first_property_value || "[FIRST PROPERTY VALUE]"}.
+
+AND WHEREAS the Second Party is the beneficial owner of ALL THAT piece or parcel of land situate at ${data.second_property_address || "[SECOND PROPERTY ADDRESS]"}${data.second_survey_plan ? `, Survey Plan No. ${data.second_survey_plan}` : ""} valued at ₦${data.second_property_value || "[SECOND PROPERTY VALUE]"}.
+
+AND WHEREAS the parties have agreed to exchange the said properties on the terms herein.
+
+NOW THIS DEED WITNESSETH:
+
+1. The First Party hereby assigns and transfers to the Second Party all the First Party's right, title, interest and benefit in and to the First Property.
+
+2. The Second Party hereby assigns and transfers to the First Party all the Second Party's right, title, interest and benefit in and to the Second Property.
+
+${data.consideration && data.consideration !== "0" ? `3. In addition to the exchange of properties, a balancing payment of ₦${data.consideration} shall be paid by the party whose property has the lower value to the other party.` : "3. The exchange is made on an equal-value basis and no balancing payment is due."}
+
+4. Each party covenants for quiet enjoyment and further assurance in respect of the property transferred by them.
+
+IN WITNESS WHEREOF the parties have executed this Deed.
+
+SIGNED by the First Party: _________________________
+${data.donor_name || "[FIRST PARTY]"}
+
+SIGNED by the Second Party: _________________________
+${data.donee_name || "[SECOND PARTY]"}
+
+---
+Generated in compliance with the Legal Practitioners Remuneration (For Business, Legal Service and Representation) Order, 2023.`;
 
     default:
       return "Document template not available.";

@@ -21,7 +21,7 @@ const FIELD_GROUPS = [
   {
     title: "Bar Details",
     fields: [
-      { key: "ban", label: "Bar Association Number (BAN)", readonly: true },
+      { key: "ban", label: "Supreme Court Enrollment Number", readonly: true },
       { key: "year_of_call", label: "Year of Call", readonly: true },
       { key: "branch", label: "NBA Branch" },
     ],

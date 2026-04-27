@@ -46,6 +46,7 @@ const Settings = () => {
       <div className="space-y-8 max-w-lg">
         <PageHeader eyebrow="Account" title="Settings" subtitle="Manage your account security and preferences." />
 
+        {/* Password */}
         <Card className="shadow-soft border border-border/60">
           <CardContent className="p-6 space-y-5">
             <div className="flex items-center gap-3 pb-2 border-b border-border/50">

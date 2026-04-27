@@ -21,7 +21,7 @@ const Hero = () => (
         <div className="flex items-center gap-3 mb-5 sm:mb-7">
           <span className="h-px w-8 sm:w-12 bg-accent" />
           <span className="text-[11px] sm:text-[13px] tracking-eyebrow uppercase text-accent font-medium">
-            Nigerian Bar Association · Est. 1959
+            Nigerian Bar Association
           </span>
         </div>
 
@@ -49,9 +49,9 @@ const Hero = () => (
 
         <div className="mt-10 sm:mt-16 grid grid-cols-3 gap-4 sm:gap-8 max-w-2xl border-t border-ivory/15 pt-6 sm:pt-8">
           {[
-            { k: "120+", v: "NBA Branches" },
-            { k: "10k+", v: "Documents Filed" },
-            { k: "100%", v: "Compliance Tracked" },
+            { k: "129", v: "NBA Branches" },
+            { k: "11", v: "Document Types" },
+            { k: "2023", v: "Remuneration Order" },
           ].map((s) => (
             <div key={s.v}>
               <p className="font-display text-2xl sm:text-4xl md:text-5xl text-ivory font-light">{s.k}</p>

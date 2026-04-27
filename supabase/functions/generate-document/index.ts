@@ -5,13 +5,20 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const ORDER_TITLE = "Legal Practitioners Remuneration (For Business, Legal Service and Representation) Order, 2023";
+
 const PARTY_LABELS: Record<string, { donor: string; donee: string }> = {
-  deed_of_assignment: { donor: "Assignor/Vendor", donee: "Assignee/Purchaser" },
-  deed_of_gift:       { donor: "Donor",           donee: "Donee" },
-  mortgage_deed:      { donor: "Mortgagor",        donee: "Mortgagee/Lender" },
-  power_of_attorney:  { donor: "Donor/Principal",  donee: "Attorney" },
-  contract_of_sale:   { donor: "Vendor",           donee: "Purchaser" },
-  tenancy_agreement:  { donor: "Landlord",         donee: "Tenant" },
+  deed_of_assignment:  { donor: "Assignor/Vendor",           donee: "Assignee/Purchaser" },
+  deed_of_gift:        { donor: "Donor",                     donee: "Donee" },
+  mortgage_deed:       { donor: "Mortgagor",                 donee: "Mortgagee/Lender" },
+  power_of_attorney:   { donor: "Donor/Principal",           donee: "Attorney" },
+  contract_of_sale:    { donor: "Vendor",                    donee: "Purchaser" },
+  tenancy_agreement:   { donor: "Landlord",                  donee: "Tenant" },
+  deed_of_lease:       { donor: "Lessor/Landlord",           donee: "Lessee/Tenant" },
+  deed_of_sub_lease:   { donor: "Sub-Lessor",                donee: "Sub-Lessee" },
+  deed_of_surrender:   { donor: "Surrenderor",               donee: "Surrenderee" },
+  deed_of_release:     { donor: "Mortgagee/Lender",          donee: "Mortgagor/Borrower" },
+  deed_of_exchange:    { donor: "First Party",               donee: "Second Party" },
 };
 
 function formatData(formData: Record<string, string>, documentType: string): string {
@@ -43,7 +50,7 @@ function buildPrompt(
   const data = formatData(formData, documentType);
 
   const DISPUTE = `Dispute resolution escalation ladder: (i) good faith negotiation for 21 days, then (ii) mediation under the Lagos Multi-Door Courthouse rules for 30 days, then (iii) arbitration under the Arbitration and Conciliation Act 2023 if still unresolved`;
-  const FOOTER = `Compliance footer confirming the remuneration fee was assessed under the Legal Practitioners' Remuneration Order 2023 and stating the exact naira amount payable`;
+  const FOOTER = `Compliance footer confirming the remuneration fee was assessed under the ${ORDER_TITLE} and stating the exact naira amount payable`;
 
   const EXECUTION_FORMAT = `
 Use this EXACT format for every signature block — underscores are mandatory, do not omit them:
@@ -353,8 +360,216 @@ EXECUTION
 
 ${BASE}`;
 
+    case "deed_of_lease": return `
+You are a Lagos State conveyancing expert drafting a complete, execution-ready DEED OF LEASE.
+
+TRANSACTION DETAILS:
+${data}
+
+DATE OF EXECUTION: ${currentDate}
+
+MANDATORY REQUIREMENTS — include every item below without exception:
+
+PARTIES
+- Use "Lessor/Landlord" and "Lessee/Tenant" throughout
+
+RECITALS
+1. Root of title recital: how the Lessor acquired the property, referencing the root of title type, date, and reference number
+2. Title document reference recital
+
+OPERATIVE PROVISIONS
+3. Demise clause: the Lessor hereby leases the property to the Lessee for the stated term at the stated annual rent
+4. Full property description including address and survey plan number where provided
+5. Habendum clause: TO HOLD for the term stated, subject to the rent and covenants herein
+6. Annual rent clause stating the rent in figures and words, with payment dates
+7. Rent review clause: provision for rent review at agreed intervals or as stated
+
+LESSEE COVENANTS
+8. Punctual payment of rent
+9. Maintenance and repair of interior and fixtures
+10. Not to sublet, assign, or part with possession without the Lessor's written consent
+11. Not to carry out alterations or additions without written consent
+12. To permit inspection by the Lessor on 48 hours' written notice
+13. To yield up the premises at expiry with keys in good repair, fair wear and tear excepted
+
+LESSOR COVENANTS
+14. Quiet enjoyment: the Lessee shall peaceably hold and enjoy the premises without interruption
+15. Structural repairs: the Lessor shall maintain the structure and exterior within a reasonable time of notice
+
+GENERAL PROVISIONS
+16. Governor's Consent clause (Land Use Act 1978 s.22): both parties shall apply for consent within 90 days; the Lessee bears costs
+17. Registration: the Deed shall be registered at the applicable Lands Registry; the Lessee bears registration costs
+18. Notice provision: service of notices by personal delivery, registered post, or email (deeming email effective 24 hours after despatch)
+19. Time of the essence
+20. Entire agreement clause
+21. Counterparts clause
+22. ${DISPUTE}
+23. ${FOOTER}
+24. Execution: two signature blocks per ${BASE}`;
+
+    case "deed_of_sub_lease": return `
+You are a Lagos State conveyancing expert drafting a complete, execution-ready DEED OF SUB-LEASE.
+
+TRANSACTION DETAILS:
+${data}
+
+DATE OF EXECUTION: ${currentDate}
+
+MANDATORY REQUIREMENTS — include every item below without exception:
+
+PARTIES
+- Use "Sub-Lessor" and "Sub-Lessee" throughout
+
+RECITALS
+1. Head lease recital: recite the Head Lease (reference, date, parties, term) under which the Sub-Lessor holds the property
+2. Consent recital: confirm the Head Landlord's consent to the sub-letting has been obtained (or that it is not required)
+
+OPERATIVE PROVISIONS
+3. Demise clause: the Sub-Lessor hereby sub-lets the property to the Sub-Lessee for the stated term at the stated annual rent
+4. Full property description including address and survey plan number where provided
+5. Habendum clause: TO HOLD for the sub-lease term stated
+6. Annual rent clause in figures and words, with payment dates
+7. Sub-lease subject to: confirm the sub-lease is subject to and with the benefit of the Head Lease covenants insofar as they relate to the property
+
+SUB-LESSEE COVENANTS (mirroring Head Lease)
+8. Punctual payment of rent
+9. To observe and perform all covenants in the Head Lease so far as they relate to the sub-let premises
+10. Maintenance and repair of interior and fixtures
+11. Not to further sub-let or assign without the Sub-Lessor's written consent (and Head Landlord's consent where required)
+12. To permit inspection on 48 hours' written notice
+13. To yield up at expiry in good repair
+
+SUB-LESSOR COVENANTS
+14. Quiet enjoyment for the sub-lease term
+15. To observe and perform the Head Lease covenants and keep the Sub-Lessee indemnified against the Head Landlord's claims
+
+GENERAL PROVISIONS
+16. Notice provision: service by personal delivery, registered post, or email
+17. Time of the essence
+18. Entire agreement
+19. Counterparts
+20. ${DISPUTE}
+21. ${FOOTER}
+22. Execution: two signature blocks per ${BASE}`;
+
+    case "deed_of_surrender": return `
+You are a Lagos State conveyancing expert drafting a complete, execution-ready DEED OF SURRENDER.
+
+TRANSACTION DETAILS:
+${data}
+
+DATE OF EXECUTION: ${currentDate}
+
+MANDATORY REQUIREMENTS — include every item below without exception:
+
+PARTIES
+- Use "Surrenderor" (the leaseholder surrendering) and "Surrenderee" (the landlord/grantor accepting)
+
+RECITALS
+1. Original lease recital: recite the Lease (reference, date, parties, term, property description)
+2. Surrender recital: state that the Surrenderor is desirous of surrendering all interest under the Lease
+
+OPERATIVE PROVISIONS
+3. Surrender clause: the Surrenderor hereby surrenders, yields up, and assigns to the Surrenderee all the Surrenderor's estate, right, title, interest, and benefit in and to the property with effect from the surrender date stated
+4. Full property description including address and survey plan number where provided
+5. Consideration clause (if any surrender premium is payable): state the amount in figures and words; include a receipt clause if consideration is paid
+6. Merger and extinguishment clause: the Lease shall merge in and be extinguished by the Surrenderee's superior interest
+7. Delivery up clause: the Surrenderor confirms the premises have been vacated and keys delivered up in good repair (fair wear and tear excepted)
+8. Covenant by Surrenderor: no sub-tenancies or encumbrances have been created that survive the surrender
+9. Indemnity: the Surrenderor indemnifies the Surrenderee against any claims arising from the Surrenderor's occupation
+
+GENERAL PROVISIONS
+10. Time of the essence
+11. Entire agreement
+12. Counterparts
+13. ${DISPUTE}
+14. ${FOOTER}
+15. Execution: two signature blocks per ${BASE}`;
+
+    case "deed_of_release": return `
+You are a Lagos State conveyancing expert drafting a complete, execution-ready DEED OF RELEASE AND DISCHARGE OF MORTGAGE.
+
+TRANSACTION DETAILS:
+${data}
+
+DATE OF EXECUTION: ${currentDate}
+
+MANDATORY REQUIREMENTS — include every item below without exception:
+
+PARTIES
+- Use "Mortgagee/Lender" and "Mortgagor/Borrower" throughout
+
+RECITALS
+1. Original mortgage recital: recite the Mortgage Deed (reference, date, parties, property, principal amount, interest rate, term)
+2. Repayment recital: confirm the Mortgagor has fully repaid the principal sum, all accrued interest, and all other charges due under the Mortgage as at the discharge date stated
+
+OPERATIVE PROVISIONS
+3. Release and discharge clause: the Mortgagee hereby releases, discharges, and reassigns to the Mortgagor all the Mortgagee's right, title, interest, and benefit in and to the mortgaged property, free from all encumbrances arising under the Mortgage
+4. Full property description including address and survey plan number where provided
+5. Satisfaction clause: the Mortgage is hereby fully satisfied and extinguished
+6. Acknowledgment clause: the Mortgagee acknowledges receipt of the full sum due
+7. Further assurance covenant: the Mortgagee will execute any further documents required to give effect to the discharge and perfect the Mortgagor's title
+8. Governor's Consent clause if applicable (Land Use Act): the Mortgagor shall obtain consent within 90 days
+9. Registration: the Deed of Release shall be registered at the Lands Registry; the Mortgagor bears all costs
+
+GENERAL PROVISIONS
+10. Time of the essence
+11. Entire agreement
+12. Counterparts
+13. ${DISPUTE}
+14. ${FOOTER}
+15. Execution: Mortgagee signature block only (as Releasor) per ${BASE}`;
+
+    case "deed_of_exchange": return `
+You are a Lagos State conveyancing expert drafting a complete, execution-ready DEED OF EXCHANGE.
+
+TRANSACTION DETAILS:
+${data}
+
+DATE OF EXECUTION: ${currentDate}
+
+MANDATORY REQUIREMENTS — include every item below without exception:
+
+PARTIES
+- Use "First Party" and "Second Party" throughout
+
+RECITALS
+1. First Property recital: the First Party is the beneficial owner of the First Property (address, survey plan, value)
+2. Second Property recital: the Second Party is the beneficial owner of the Second Property (address, survey plan, value)
+3. Exchange recital: the parties have agreed to exchange their respective properties on the terms herein
+
+OPERATIVE PROVISIONS — FIRST PARTY'S CONVEYANCE
+4. Consideration clause for First Party: state the value of the First Property (and balancing payment received, if any) in figures and words
+5. Receipt clause for First Party
+6. Assignment/Transfer by First Party: the First Party hereby assigns and transfers to the Second Party all the First Party's right, title, interest, and benefit in and to the First Property TO HOLD in fee simple
+7. Full description of First Property
+
+OPERATIVE PROVISIONS — SECOND PARTY'S CONVEYANCE
+8. Consideration clause for Second Party: state the value of the Second Property (and balancing payment received, if any) in figures and words
+9. Receipt clause for Second Party
+10. Assignment/Transfer by Second Party: the Second Party hereby assigns and transfers to the First Party all the Second Party's right, title, interest, and benefit in and to the Second Property TO HOLD in fee simple
+11. Full description of Second Property
+
+BALANCING PAYMENT (if values differ)
+12. If a balancing payment is provided: state which party pays it, the amount in figures and words, and the payment date
+
+TITLE COVENANTS (for each party in respect of the property they are conveying)
+13. Covenant for quiet enjoyment
+14. Covenant against encumbrances
+15. Further assurance covenant
+
+GENERAL PROVISIONS
+16. Governor's Consent clause for both properties (Land Use Act 1978 s.22): each party to apply for consent within 90 days
+17. Registration: each party registers the property acquired; costs borne by the acquiring party
+18. Time of the essence
+19. Entire agreement
+20. Counterparts
+21. ${DISPUTE}
+22. ${FOOTER}
+23. Execution: two signature blocks (one per party) per ${BASE}`;
+
     default:
-      return `Draft a complete legal document of type "${documentType}" using these details:\n${data}\nDate: ${currentDate}. All years must be ${currentYear}.`;
+      return `Draft a complete legal document of type "${documentType}" using these details:\n${data}\nDate: ${currentDate}. All years must be ${currentYear}. Use the ${ORDER_TITLE} for remuneration compliance.`;
   }
 }
 
@@ -378,12 +593,12 @@ Deno.serve(async (req) => {
     let prompt: string;
 
     if (method === "precedent") {
-      prompt = `You are a Nigerian legal document formatter specialising in the Legal Practitioners' Remuneration Order 2023.
+      prompt = `You are a Nigerian legal document formatter specialising in the ${ORDER_TITLE}.
 
 The user has provided an existing precedent document. Reformat it as follows:
 1. Apply proper Nigerian legal document structure with numbered clauses
-2. Ensure compliance with the Legal Practitioners' Remuneration Order 2023
-3. Add a compliance footer referencing the Remuneration Order 2023
+2. Ensure compliance with the ${ORDER_TITLE}
+3. Add a compliance footer referencing the ${ORDER_TITLE}
 4. Preserve all original parties, terms, and substance exactly
 5. Correct any year references to use ${currentYear}
 

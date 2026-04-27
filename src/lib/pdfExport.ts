@@ -55,7 +55,7 @@ export const exportDocumentToPDF = (
           ${metadata ? `
           <div class="metadata">
             ${metadata.referenceNumber ? `<div class="metadata-row"><span class="metadata-label">Reference:</span><span>${escaped(metadata.referenceNumber)}</span></div>` : ""}
-            ${metadata.ban ? `<div class="metadata-row"><span class="metadata-label">BAN:</span><span>${escaped(metadata.ban)}</span></div>` : ""}
+            ${metadata.ban ? `<div class="metadata-row"><span class="metadata-label">Enrollment No.:</span><span>${escaped(metadata.ban)}</span></div>` : ""}
             ${metadata.status ? `<div class="metadata-row"><span class="metadata-label">Status:</span><span>${escaped(metadata.status)}</span></div>` : ""}
             ${metadata.createdAt ? `<div class="metadata-row"><span class="metadata-label">Created:</span><span>${escaped(metadata.createdAt)}</span></div>` : ""}
           </div>` : ""}

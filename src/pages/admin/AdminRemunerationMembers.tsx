@@ -7,9 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { logAudit } from "@/lib/auditLog";
 import type { MemberProfile } from "@/types/portal";
 
 const AdminRemunerationMembers = () => {
+  const { user } = useAuth();
   const [members, setMembers] = useState<MemberProfile[]>([]);
   const [filtered, setFiltered] = useState<MemberProfile[]>([]);
   const [query, setQuery] = useState("");
@@ -30,7 +33,7 @@ const AdminRemunerationMembers = () => {
 
   const handleExportCSV = () => {
     const rows = [
-      ["Name", "Email", "BAN", "Branch", "Year of Call", "Phone", "Status", "Joined"],
+      ["Name", "Email", "Enrollment No.", "Branch", "Year of Call", "Phone", "Status", "Joined"],
       ...members.map((m) => [
         [m.surname, m.first_name, m.middle_name].filter(Boolean).join(" ") || "—",
         m.email || "—",
@@ -80,6 +83,9 @@ const AdminRemunerationMembers = () => {
         body: { type: "account_approved", to: m.email, name },
       });
     }
+    if (user) {
+      logAudit(user.id, "member_approved", "profile", m.id, { member_email: m.email, member_name: name });
+    }
     const updated = members.map((mem) => mem.id === m.id ? { ...mem, status: "active" } : mem);
     setMembers(updated); setFiltered(updated);
     toast({ title: "Account approved", description: `${name} can now access the portal.` });
@@ -89,6 +95,13 @@ const AdminRemunerationMembers = () => {
     const newStatus = m.status === "suspended" ? "active" : "suspended";
     const { error } = await supabase.from("profiles").update({ status: newStatus }).eq("id", m.id);
     if (error) { toast({ title: "Failed", description: error.message, variant: "destructive" }); return; }
+    const name = [m.surname, m.first_name].filter(Boolean).join(" ") || m.email || "Member";
+    if (user) {
+      logAudit(user.id, newStatus === "suspended" ? "member_suspended" : "member_reinstated", "profile", m.id, {
+        member_email: m.email,
+        member_name: name,
+      });
+    }
     const updated = members.map((mem) => mem.id === m.id ? { ...mem, status: newStatus } : mem);
     setMembers(updated); setFiltered(updated);
     toast({ title: newStatus === "suspended" ? "Member suspended" : "Member reinstated" });
@@ -172,7 +185,7 @@ const AdminRemunerationMembers = () => {
                         <div><span className="text-muted-foreground">Branch:</span> {m.branch || "-"}</div>
                         <div><span className="text-muted-foreground">Year of Call:</span> {m.year_of_call || "-"}</div>
                         <div><span className="text-muted-foreground">Phone:</span> {m.phone || "-"}</div>
-                        <div><span className="text-muted-foreground">BAN:</span> {m.ban || "-"}</div>
+                        <div><span className="text-muted-foreground">Enrollment No.:</span> {m.ban || "-"}</div>
                         <div><span className="text-muted-foreground">Office:</span> {m.office_address || "-"}</div>
                       </div>
                       <div className="flex flex-wrap gap-2 pt-1">

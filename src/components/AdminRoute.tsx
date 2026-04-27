@@ -5,10 +5,12 @@ import { useAuth } from "@/contexts/AuthContext";
 export const adminEmails = (import.meta.env.VITE_ADMIN_EMAILS || "")
   .split(",").map((e: string) => e.trim().toLowerCase()).filter(Boolean);
 
-export const isAdmin = (email: string) => !!email && adminEmails.includes(email.toLowerCase());
+export const isAdminEmail = (email: string) => !!email && adminEmails.includes(email.toLowerCase());
+
+export const isAdmin = isAdminEmail;
 
 const AdminRoute = ({ children }: { children: ReactNode }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, isAdmin: profileIsAdmin } = useAuth();
 
   if (loading) {
     return (
@@ -23,7 +25,7 @@ const AdminRoute = ({ children }: { children: ReactNode }) => {
   const email = user.email?.toLowerCase() ?? "";
   const metaMatch = user.app_metadata?.role === "admin";
 
-  if (!isAdmin(email) && !metaMatch) return <Navigate to="/" replace />;
+  if (!isAdminEmail(email) && !metaMatch && !profileIsAdmin) return <Navigate to="/" replace />;
 
   return <>{children}</>;
 };

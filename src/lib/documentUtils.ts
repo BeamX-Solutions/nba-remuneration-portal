@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { logAudit } from "@/lib/auditLog";
 
 /**
  * Save a new version of a document
@@ -152,6 +153,13 @@ export const approveDocument = async (
   comments?: string
 ) => {
   try {
+    const { data: doc, error: fetchError } = await supabase
+      .from("documents")
+      .select("user_id, title, reference_number")
+      .eq("id", documentId)
+      .single();
+    if (fetchError) throw fetchError;
+
     const { error } = await supabase
       .from("documents")
       .update({
@@ -161,8 +169,22 @@ export const approveDocument = async (
         approver_comments: comments || "",
       })
       .eq("id", documentId);
-
     if (error) throw error;
+
+    if (doc?.user_id) {
+      await supabase.from("notifications").insert({
+        user_id: doc.user_id,
+        title: "Document Approved",
+        message: `Your document "${doc.title}"${doc.reference_number ? ` (Ref: ${doc.reference_number})` : ""} has been approved.${comments ? ` Reviewer note: ${comments}` : ""}`,
+        type: "document_update",
+      });
+    }
+
+    logAudit(adminId, "document_approved", "document", documentId, {
+      document_title: doc?.title,
+      reference_number: doc?.reference_number ?? undefined,
+    });
+
     return { success: true };
   } catch (error: any) {
     console.error("Error approving document:", error);
@@ -170,15 +192,19 @@ export const approveDocument = async (
   }
 };
 
-/**
- * Reject a document with reason
- */
 export const rejectDocument = async (
   documentId: string,
   adminId: string,
   reason: string
 ) => {
   try {
+    const { data: doc, error: fetchError } = await supabase
+      .from("documents")
+      .select("user_id, title, reference_number")
+      .eq("id", documentId)
+      .single();
+    if (fetchError) throw fetchError;
+
     const { error } = await supabase
       .from("documents")
       .update({
@@ -188,8 +214,23 @@ export const rejectDocument = async (
         rejection_reason: reason,
       })
       .eq("id", documentId);
-
     if (error) throw error;
+
+    if (doc?.user_id) {
+      await supabase.from("notifications").insert({
+        user_id: doc.user_id,
+        title: "Document Returned for Revision",
+        message: `Your document "${doc.title}"${doc.reference_number ? ` (Ref: ${doc.reference_number})` : ""} requires revision. Reason: ${reason}`,
+        type: "document_update",
+      });
+    }
+
+    logAudit(adminId, "document_rejected", "document", documentId, {
+      document_title: doc?.title,
+      reference_number: doc?.reference_number ?? undefined,
+      reason,
+    });
+
     return { success: true };
   } catch (error: any) {
     console.error("Error rejecting document:", error);

@@ -41,14 +41,14 @@ const FindDocument = () => {
   return (
     <PortalLayout>
       <div className="space-y-6">
-        <PageHeader eyebrow="Document Registry" title="Find a Document" subtitle="Look up completed documents using both BAN and reference number for security." />
+        <PageHeader eyebrow="Document Registry" title="Find a Document" subtitle="Look up completed documents using both Enrollment Number and reference number for security." />
 
         <Card className="shadow-card">
           <CardContent className="p-4 md:p-6">
             <form onSubmit={(e) => { e.preventDefault(); handleSearch(); }} className="space-y-3">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <input type="text" value={ban} onChange={(e) => setBan(e.target.value)}
-                  placeholder="BAN (e.g. 12345)"
+                  placeholder="Enrollment No. (e.g. 12345)"
                   className="rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
                 <input type="text" value={refNumber} onChange={(e) => setRefNumber(e.target.value)}
                   placeholder="Reference number (e.g. REM-ABC123)"
@@ -58,7 +58,7 @@ const FindDocument = () => {
                 {searching ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Search className="h-4 w-4 mr-2" />}
                 Search
               </Button>
-              <p className="text-[11px] tracking-eyebrow uppercase font-semibold text-muted-foreground/60 text-center">Both BAN and reference number are required</p>
+              <p className="text-[11px] tracking-eyebrow uppercase font-semibold text-muted-foreground/60 text-center">Both Enrollment Number and reference number are required</p>
             </form>
           </CardContent>
         </Card>
@@ -69,7 +69,7 @@ const FindDocument = () => {
               <div className="h-14 w-14 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mb-5">
                 <Search className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="font-display text-xl font-light text-foreground tracking-display mb-1">Enter BAN & Reference Number</h3>
+              <h3 className="font-display text-xl font-light text-foreground tracking-display mb-1">Enter Enrollment No. & Reference Number</h3>
               <p className="text-sm text-muted-foreground">Provide both to search the document registry.</p>
             </CardContent>
           </Card>
@@ -80,7 +80,7 @@ const FindDocument = () => {
                 <FileText className="h-6 w-6 text-primary" />
               </div>
               <h3 className="font-display text-xl font-light text-foreground tracking-display mb-1">No documents found</h3>
-              <p className="text-sm text-muted-foreground">No completed documents matched BAN "{ban}" and reference "{refNumber}".</p>
+              <p className="text-sm text-muted-foreground">No completed documents matched Enrollment No. "{ban}" and reference "{refNumber}".</p>
             </CardContent>
           </Card>
         ) : (
@@ -94,7 +94,7 @@ const FindDocument = () => {
                     <h3 className="font-display text-base font-light text-card-foreground tracking-display leading-snug truncate">{doc.title}</h3>
                     <p className="text-[11px] tracking-eyebrow uppercase font-semibold text-muted-foreground mt-1">
                       {DOC_TYPE_LABELS[doc.document_type] || doc.document_type}
-                      {doc.ban && ` · BAN: ${doc.ban}`}
+                      {doc.ban && ` · Enr. No.: ${doc.ban}`}
                       {doc.reference_number && ` · Ref: ${doc.reference_number}`}
                     </p>
                   </div>

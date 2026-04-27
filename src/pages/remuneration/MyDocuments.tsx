@@ -1,9 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import {
   FolderOpen, FileText, ChevronDown, ChevronUp, Copy, Trash2,
   Check, Download, Pencil, X, Send, RotateCcw, History, AlertTriangle, Clock,
+  ArrowUpDown,
 } from "lucide-react";
+import { DOC_TYPE_LABELS } from "@/lib/constants";
 import PortalLayout from "@/components/PortalLayout";
 import PageHeader from "@/components/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
@@ -20,6 +22,53 @@ import {
   getDocumentVersions,
   restoreDocumentVersion,
 } from "@/lib/documentUtils";
+
+const DocumentTimeline = ({ doc }: { doc: PortalDocument }) => {
+  const isRejected  = doc.approval_status === "rejected";
+  const isSubmitted = ["submitted", "approved", "rejected"].includes(doc.approval_status ?? "");
+  const isApproved  = doc.approval_status === "approved" || doc.status === "completed";
+  const isCompleted = doc.status === "completed";
+
+  const steps = [
+    { label: "Draft",        done: true,         active: !isSubmitted && !isRejected },
+    { label: "Submitted",    done: isSubmitted,   active: isSubmitted && !isApproved && !isRejected },
+    {
+      label: isRejected ? "Rejected" : "Approved",
+      done: isApproved || isRejected,
+      active: (isApproved || isRejected) && !isCompleted,
+      error: isRejected,
+    },
+    { label: "Completed",    done: isCompleted,  active: isCompleted },
+  ];
+
+  return (
+    <div className="flex items-center gap-0">
+      {steps.map((step, i) => (
+        <div key={step.label} className="flex items-center flex-1 last:flex-none">
+          <div className="flex flex-col items-center gap-1">
+            <div className={`h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold border-2 transition-colors ${
+              step.error  ? "bg-red-500 border-red-500 text-white" :
+              step.done   ? "bg-primary border-primary text-primary-foreground" :
+              step.active ? "bg-foreground border-foreground text-background" :
+                            "bg-background border-muted-foreground/30 text-muted-foreground"
+            }`}>
+              {step.done && !step.error ? <Check className="h-3 w-3" /> : i + 1}
+            </div>
+            <span className={`text-[10px] font-semibold whitespace-nowrap ${
+              step.error  ? "text-red-600" :
+              step.done || step.active ? "text-foreground" : "text-muted-foreground"
+            }`}>
+              {step.label}
+            </span>
+          </div>
+          {i < steps.length - 1 && (
+            <div className={`flex-1 h-px mx-1 mb-4 ${step.done ? "bg-primary" : "bg-border"}`} />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+};
 
 const approvalBadge = (status: string) => {
   switch (status) {
@@ -44,6 +93,9 @@ const MyDocuments = () => {
   const [editContent, setEditContent] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
   const [submitting, setSubmitting] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const [versionsDocId, setVersionsDocId] = useState<string | null>(null);
   const [versions, setVersions] = useState<any[]>([]);
   const [loadingVersions, setLoadingVersions] = useState(false);
@@ -135,15 +187,91 @@ const MyDocuments = () => {
   };
 
   const docTypeLabel = (type: string) =>
-    type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    DOC_TYPE_LABELS[type] || type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
-  const canSubmit = (doc: any) =>
+  const canSubmit = (doc: PortalDocument) =>
     doc.status === "draft" && (!doc.approval_status || doc.approval_status === "pending" || doc.approval_status === "rejected");
+
+  const filteredDocuments = useMemo(() => {
+    let list = [...documents];
+    if (statusFilter !== "all") {
+      list = list.filter((d) => {
+        if (statusFilter === "draft")     return d.status === "draft" && (!d.approval_status || d.approval_status === "pending");
+        if (statusFilter === "submitted") return d.approval_status === "submitted";
+        if (statusFilter === "approved")  return d.approval_status === "approved";
+        if (statusFilter === "rejected")  return d.approval_status === "rejected";
+        if (statusFilter === "completed") return d.status === "completed";
+        return true;
+      });
+    }
+    if (typeFilter !== "all") list = list.filter((d) => d.document_type === typeFilter);
+    list.sort((a, b) => {
+      const diff = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      return sortOrder === "newest" ? diff : -diff;
+    });
+    return list;
+  }, [documents, statusFilter, typeFilter, sortOrder]);
+
+  const docTypes = useMemo(() => [...new Set(documents.map((d) => d.document_type))], [documents]);
 
   return (
     <PortalLayout>
       <div className="space-y-6">
         <PageHeader eyebrow="Document Archive" title="My Documents" subtitle="View, manage, and submit your prepared legal documents." />
+
+        {/* Filter bar */}
+        {!loading && !error && documents.length > 0 && (
+          <div className="flex flex-wrap gap-2 items-center">
+            {/* Status filters */}
+            <div className="flex flex-wrap gap-1.5">
+              {[
+                { key: "all", label: "All" },
+                { key: "draft", label: "Draft" },
+                { key: "submitted", label: "Submitted" },
+                { key: "approved", label: "Approved" },
+                { key: "rejected", label: "Rejected" },
+                { key: "completed", label: "Completed" },
+              ].map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => setStatusFilter(key)}
+                  className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
+                    statusFilter === key
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                  }`}
+                >
+                  {label}
+                  {key === "all" && <span className="ml-1 opacity-60">({documents.length})</span>}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-1.5 ml-auto">
+              {/* Document type filter */}
+              {docTypes.length > 1 && (
+                <select
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value)}
+                  className="text-xs border border-border bg-background text-foreground rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-ring"
+                >
+                  <option value="all">All types</option>
+                  {docTypes.map((t) => (
+                    <option key={t} value={t}>{docTypeLabel(t)}</option>
+                  ))}
+                </select>
+              )}
+              {/* Sort toggle */}
+              <button
+                onClick={() => setSortOrder((o) => o === "newest" ? "oldest" : "newest")}
+                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground border border-border rounded-md px-2 py-1.5 transition-colors"
+              >
+                <ArrowUpDown className="h-3 w-3" />
+                {sortOrder === "newest" ? "Newest" : "Oldest"}
+              </button>
+            </div>
+          </div>
+        )}
 
         {loading ? (
           <div className="flex items-center justify-center py-20">
@@ -166,9 +294,18 @@ const MyDocuments = () => {
               </Button>
             </CardContent>
           </Card>
+        ) : filteredDocuments.length === 0 ? (
+          <Card className="shadow-card">
+            <CardContent className="p-10 text-center">
+              <p className="text-sm text-muted-foreground">No documents match the selected filters.</p>
+              <button onClick={() => { setStatusFilter("all"); setTypeFilter("all"); }} className="text-xs text-primary hover:text-accent mt-2 font-semibold">
+                Clear filters
+              </button>
+            </CardContent>
+          </Card>
         ) : (
           <div className="space-y-3">
-            {documents.map((doc) => (
+            {filteredDocuments.map((doc) => (
               <Card key={doc.id} className="shadow-soft card-hover">
                 <CardContent className="p-4">
                   <button
@@ -199,6 +336,9 @@ const MyDocuments = () => {
                           Reference · <span className="text-muted-foreground">{doc.reference_number}</span>
                         </p>
                       )}
+
+                      {/* Status timeline */}
+                      <DocumentTimeline doc={doc} />
 
                       {/* Rejection panel */}
                       {doc.approval_status === "rejected" && (

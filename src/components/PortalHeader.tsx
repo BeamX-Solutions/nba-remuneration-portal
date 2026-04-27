@@ -25,7 +25,7 @@ const PortalHeader = ({ sidebarContent, mobileOpen = false, setMobileOpen = () =
         <div className="lg:hidden shrink-0">
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
-              <button className="flex items-center justify-center h-9 w-9 rounded-sm border border-primary-foreground/20 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20 hover:border-primary-foreground/35 transition-colors">
+              <button aria-label="Open navigation menu" className="flex items-center justify-center h-9 w-9 rounded-sm border border-primary-foreground/20 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20 hover:border-primary-foreground/35 transition-colors">
                 <Menu className="h-4 w-4" />
               </button>
             </SheetTrigger>

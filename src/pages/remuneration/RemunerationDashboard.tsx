@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { FileText, FolderOpen, Clock, CheckCircle, Download, Megaphone } from "lucide-react";
 import { Link } from "react-router-dom";
 import PortalLayout from "@/components/PortalLayout";
@@ -70,6 +70,39 @@ const RemunerationDashboard = () => {
       })
       .catch(() => {/* queries failed — loading will clear in finally */})
       .finally(() => setLoading(false));
+  }, [user]);
+
+  const handleExportCSV = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("documents")
+      .select("id, title, document_type, status, approval_status, reference_number, form_data, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+    const docs = data || [];
+    const rows = [
+      ["Reference", "Document Type", "Consideration (₦)", "Fee (10%) (₦)", "Status", "Date"],
+      ...docs.map((d) => {
+        const consideration = d.form_data?.consideration || "—";
+        const raw = parseFloat((d.form_data?.consideration || "").replace(/,/g, ""));
+        const fee = isNaN(raw) ? "—" : (raw * 0.1).toLocaleString("en-NG", { minimumFractionDigits: 2 });
+        const status = d.status === "completed" ? "Processed" : d.approval_status === "submitted" ? "Awaiting Payment" : "Not Submitted";
+        return [
+          d.reference_number || d.id.slice(0, 8),
+          d.document_type.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()),
+          consideration,
+          fee,
+          status,
+          new Date(d.created_at).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" }),
+        ];
+      }),
+    ];
+    const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `payment-history-${Date.now()}.csv`; a.click();
+    URL.revokeObjectURL(url);
   }, [user]);
 
   const getAmount = (doc: any) => {
@@ -185,7 +218,7 @@ const RemunerationDashboard = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-1">
               <h3 className="font-display text-lg font-light text-foreground tracking-display">Payment History</h3>
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8">
+              <Button variant="outline" size="sm" onClick={handleExportCSV} className="gap-1.5 text-xs h-8">
                 <Download className="h-3.5 w-3.5" /> Export
               </Button>
             </div>

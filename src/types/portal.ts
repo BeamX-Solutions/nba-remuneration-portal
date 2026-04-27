@@ -30,6 +30,29 @@ export interface MemberProfile {
   phone: string | null;
   office_address: string | null;
   status: "pending" | "active" | "suspended" | null;
+  is_admin: boolean;
+  created_at: string;
+}
+
+export interface AuditLog {
+  id: string;
+  admin_id: string | null;
+  action: string;
+  entity_type: string;
+  entity_id: string | null;
+  details: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export interface Payment {
+  id: string;
+  document_id: string;
+  user_id: string;
+  amount: number;
+  payment_method: string;
+  reference: string | null;
+  notes: string | null;
+  recorded_by: string | null;
   created_at: string;
 }
 

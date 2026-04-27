@@ -12,11 +12,11 @@ import { Loader2 } from "lucide-react";
 const fields = [
   { key: "surname",        label: "Surname",                    required: true },
   { key: "first_name",     label: "First Name",                 required: true },
-  { key: "middle_name",    label: "Middle Name" },
-  { key: "ban",            label: "BAN (Bar Admission Number)", required: true,  placeholder: "e.g. 12345",  locked: true },
-  { key: "year_of_call",   label: "Year of Call",               placeholder: "e.g. 2018", locked: true },
+  { key: "middle_name",    label: "Middle Name",                required: true },
+  { key: "ban",            label: "Supreme Court Enrollment Number", required: true, placeholder: "e.g. 12345", locked: true },
+  { key: "year_of_call",   label: "Year of Call",               required: true, placeholder: "e.g. 2018", locked: true },
   { key: "phone",          label: "Phone Number",               required: true },
-  { key: "office_address", label: "Office Address",             fullWidth: true },
+  { key: "office_address", label: "Office Address",             required: true, fullWidth: true },
 ];
 
 const CompleteProfile = () => {
@@ -64,6 +64,15 @@ const CompleteProfile = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    const missing = fields.find((f) => f.required && !form[f.key as keyof typeof form]?.trim());
+    if (missing) {
+      toast({ title: `${missing.label} is required.`, variant: "destructive" });
+      return;
+    }
+    if (!form.branch) {
+      toast({ title: "NBA Branch is required.", variant: "destructive" });
+      return;
+    }
     setLoading(true);
     const { error } = await supabase.from("profiles").upsert({
       user_id:        user.id,
@@ -141,7 +150,7 @@ const CompleteProfile = () => {
               Fields marked <span className="text-destructive">*</span> are required.
             </p>
             <p className="text-muted-foreground/70 text-xs mb-8">
-              BAN and Year of Call cannot be changed after saving.
+              Enrollment Number and Year of Call cannot be changed after saving.
             </p>
             <div className="h-px bg-accent/30 mb-8" />
 

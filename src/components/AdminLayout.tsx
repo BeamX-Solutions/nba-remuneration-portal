@@ -1,7 +1,8 @@
 import { ReactNode, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Users, FileText, Bell, LogOut, ShieldCheck, Menu, Megaphone, BookMarked, CheckSquare } from "lucide-react";
+import { LayoutDashboard, Users, FileText, Bell, LogOut, Menu, Megaphone, BookMarked, CheckSquare, BarChart2, ScrollText, UserCog } from "lucide-react";
+import nbaLogo from "@/assets/nba-logo.png";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -11,9 +12,12 @@ const sidebarItems = [
   { label: "Members",            href: "/admin/members",           icon: <Users className="h-4 w-4" /> },
   { label: "Documents",          href: "/admin/documents",         icon: <FileText className="h-4 w-4" /> },
   { label: "Approval Queue",     href: "/admin/approval-queue",    icon: <CheckSquare className="h-4 w-4" /> },
+  { label: "Reporting",          href: "/admin/reporting",         icon: <BarChart2 className="h-4 w-4" /> },
   { label: "Announcements",      href: "/admin/announcements",     icon: <Megaphone className="h-4 w-4" /> },
   { label: "Resources",          href: "/admin/resources",         icon: <BookMarked className="h-4 w-4" /> },
   { label: "Send Notification",  href: "/admin/notify",            icon: <Bell className="h-4 w-4" /> },
+  { label: "Audit Logs",         href: "/admin/audit-logs",        icon: <ScrollText className="h-4 w-4" /> },
+  { label: "Admin Roles",        href: "/admin/roles",             icon: <UserCog className="h-4 w-4" /> },
 ];
 
 const AdminLayout = ({ children }: { children: ReactNode }) => {
@@ -28,7 +32,7 @@ const AdminLayout = ({ children }: { children: ReactNode }) => {
     <>
       <div className="p-6 border-b border-primary-foreground/20">
         <div className="flex items-center gap-2 mb-1">
-          <ShieldCheck className="h-5 w-5 text-accent" />
+          <img src={nbaLogo} alt="NBA Logo" className="h-7 w-7 object-contain" />
           <h2 className="font-display text-xl font-light text-accent tracking-display">Admin Panel</h2>
         </div>
         <p className="text-xs text-primary-foreground/60 truncate">{user?.email}</p>
@@ -81,7 +85,7 @@ const AdminLayout = ({ children }: { children: ReactNode }) => {
             </SheetContent>
           </Sheet>
           <div className="flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4 text-accent" />
+            <img src={nbaLogo} alt="NBA Logo" className="h-6 w-6 object-contain" />
             <span className="font-display font-light text-base text-accent tracking-display">Admin Panel</span>
           </div>
         </div>

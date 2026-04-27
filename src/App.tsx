@@ -42,6 +42,9 @@ import AdminApprovalQueue from "./pages/admin/AdminApprovalQueue.tsx";
 import AdminAnnouncements from "./pages/admin/AdminAnnouncements.tsx";
 import AdminNotify from "./pages/admin/AdminNotify.tsx";
 import AdminResources from "./pages/admin/AdminResources.tsx";
+import AdminReporting from "./pages/admin/AdminReporting.tsx";
+import AdminAuditLogs from "./pages/admin/AdminAuditLogs.tsx";
+import AdminRoles from "./pages/admin/AdminRoles.tsx";
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -93,6 +96,9 @@ const App = () => (
               <Route path="/admin/announcements" element={<AdminRoute><AdminAnnouncements /></AdminRoute>} />
               <Route path="/admin/notify" element={<AdminRoute><AdminNotify /></AdminRoute>} />
               <Route path="/admin/resources" element={<AdminRoute><AdminResources /></AdminRoute>} />
+              <Route path="/admin/reporting" element={<AdminRoute><AdminReporting /></AdminRoute>} />
+              <Route path="/admin/audit-logs" element={<AdminRoute><AdminAuditLogs /></AdminRoute>} />
+              <Route path="/admin/roles" element={<AdminRoute><AdminRoles /></AdminRoute>} />
 
               <Route path="*" element={<NotFound />} />
             </Routes>

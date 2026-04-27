@@ -1,4 +1,5 @@
 import { Scale, ShieldCheck, BookOpen } from "lucide-react";
+import { ORDER_TITLE } from "@/lib/constants";
 import PortalLayout from "@/components/PortalLayout";
 import PageHeader from "@/components/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,12 +8,12 @@ const highlights = [
   {
     icon: <Scale className="h-7 w-7 text-accent" />,
     title: "Remuneration Order 2023 Compliance",
-    body: "Every document generated through this portal is structured to comply with the Legal Practitioners' Remuneration Order 2023, ensuring legal practitioners meet their statutory obligations.",
+    body: "Every document generated through this portal is structured to comply with the Legal Practitioners Remuneration (For Business, Legal Service and Representation) Order, 2023, ensuring legal practitioners meet their statutory obligations.",
   },
   {
     icon: <ShieldCheck className="h-7 w-7 text-accent" />,
-    title: "BAIN: Bar Identification Number",
-    body: "All finalized documents receive a unique Bar Identification Number (BAIN) at the footer, serving as proof of compliance and enabling verification by any party.",
+    title: "NBA Reference Number",
+    body: "Every document processed through the portal is assigned a unique reference number, enabling easy tracking and verification of remuneration compliance.",
   },
   {
     icon: <BookOpen className="h-7 w-7 text-accent" />,
@@ -36,9 +37,9 @@ const RemunerationAbout = () => (
             documents from any location, quickly, accurately and in accordance with the law.
           </p>
           <p className="text-muted-foreground leading-relaxed">
-            The portal is powered by the <strong>Legal Practitioners' Remuneration Order 2023</strong> and is the
+            The portal is powered by the <strong>{ORDER_TITLE}</strong> and is the
             authoritative tool for ensuring that property transaction documents, powers of attorney, mortgages and
-            other instruments are properly rated, structured and stamped.
+            other instruments are properly rated and structured in accordance with the law.
           </p>
         </CardContent>
       </Card>
