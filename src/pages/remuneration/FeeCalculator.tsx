@@ -82,7 +82,7 @@ const FeeCalculator = () => {
 
   return (
     <PortalLayout>
-      <div className="space-y-6 max-w-2xl">
+      <div className="space-y-6">
         <PageHeader
           eyebrow="Tools"
           title="Fee Calculator"

@@ -146,42 +146,42 @@ const PaymentHistory = () => {
             {/* Summary cards */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <Card className="shadow-card">
-                <CardContent className="p-5 flex items-center gap-4">
-                  <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center shrink-0">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                  </div>
-                  <div>
+                <CardContent className="p-5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                    </div>
                     <p className="text-[11px] tracking-eyebrow uppercase font-semibold text-muted-foreground">Fees Processed</p>
-                    <p className="font-display text-2xl font-light text-foreground mt-0.5">
-                      ₦{totalFeesPaid.toLocaleString("en-NG", { minimumFractionDigits: 2 })}
-                    </p>
                   </div>
+                  <p className="font-display text-2xl font-light text-foreground">
+                    ₦{totalFeesPaid.toLocaleString("en-NG", { minimumFractionDigits: 2 })}
+                  </p>
                 </CardContent>
               </Card>
               <Card className="shadow-card">
-                <CardContent className="p-5 flex items-center gap-4">
-                  <div className="h-10 w-10 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
-                    <Clock className="h-5 w-5 text-accent" />
-                  </div>
-                  <div>
+                <CardContent className="p-5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-8 w-8 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
+                      <Clock className="h-4 w-4 text-accent" />
+                    </div>
                     <p className="text-[11px] tracking-eyebrow uppercase font-semibold text-muted-foreground">Outstanding Fees</p>
-                    <p className="font-display text-2xl font-light text-foreground mt-0.5">
-                      ₦{totalFeesDue.toLocaleString("en-NG", { minimumFractionDigits: 2 })}
-                    </p>
                   </div>
+                  <p className="font-display text-2xl font-light text-foreground">
+                    ₦{totalFeesDue.toLocaleString("en-NG", { minimumFractionDigits: 2 })}
+                  </p>
                 </CardContent>
               </Card>
               <Card className="shadow-card">
-                <CardContent className="p-5 flex items-center gap-4">
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                    <Receipt className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
+                <CardContent className="p-5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <Receipt className="h-4 w-4 text-primary" />
+                    </div>
                     <p className="text-[11px] tracking-eyebrow uppercase font-semibold text-muted-foreground">Amount Paid</p>
-                    <p className="font-display text-2xl font-light text-foreground mt-0.5">
-                      ₦{totalActualPaid.toLocaleString("en-NG", { minimumFractionDigits: 2 })}
-                    </p>
                   </div>
+                  <p className="font-display text-2xl font-light text-foreground">
+                    ₦{totalActualPaid.toLocaleString("en-NG", { minimumFractionDigits: 2 })}
+                  </p>
                 </CardContent>
               </Card>
             </div>
